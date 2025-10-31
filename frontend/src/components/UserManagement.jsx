@@ -40,7 +40,6 @@ const UserManagement = ({ adminColumns, instructorColumns, traineeColumns }) => 
     confirmPassword: "",
   });
 
-  // Used to avoid showing toast repeatedly on every keystroke
   const [hasShownMismatchToast, setHasShownMismatchToast] = useState(false);
 
   const generateTraineeId = () => {
@@ -197,6 +196,8 @@ const UserManagement = ({ adminColumns, instructorColumns, traineeColumns }) => 
     const page = currentPage[role];
     const totalRows = data.length;
     const paginatedData = paginate(data, page);
+    const startRow = totalRows === 0 ? 0 : (page - 1) * rowsPerPage + 1;
+    const endRow = Math.min(page * rowsPerPage, totalRows);
 
     const handlePrev = () => {
       setCurrentPage((prev) => ({ ...prev, [role]: Math.max(prev[role] - 1, 1) }));
@@ -256,8 +257,11 @@ const UserManagement = ({ adminColumns, instructorColumns, traineeColumns }) => 
           </table>
         </div>
 
+        {/* ✅ Updated pagination format */}
         <div className="d-flex justify-content-between align-items-center mt-2 flex-wrap gap-2">
-          <div>Page {page}</div>
+          <div>
+            {startRow}-{endRow} of {totalRows}
+          </div>
           <div>
             <Button variant="outline-primary" size="sm" onClick={handlePrev}>
               Prev
@@ -322,7 +326,10 @@ const UserManagement = ({ adminColumns, instructorColumns, traineeColumns }) => 
 
       <div className="mb-3">
         <label>Rows per page: </label>{" "}
-        <select value={rowsPerPage} onChange={(e) => setRowsPerPage(Number(e.target.value))}>
+        <select
+          value={rowsPerPage}
+          onChange={(e) => setRowsPerPage(Number(e.target.value))}
+        >
           {[5, 10, 15, 20].map((n) => (
             <option key={n} value={n}>
               {n}
@@ -333,10 +340,15 @@ const UserManagement = ({ adminColumns, instructorColumns, traineeColumns }) => 
 
       {/* Tables */}
       <UserTable title="Admin" data={admins} columns={adminColumns} role="admin" />
-      <UserTable title="Instructor" data={instructors} columns={instructorColumns} role="instructor" />
+      <UserTable
+        title="Instructor"
+        data={instructors}
+        columns={instructorColumns}
+        role="instructor"
+      />
       <UserTable title="Trainee" data={trainees} columns={traineeColumns} role="trainee" />
 
-      {/* ✅ Add User Modal */}
+      {/* Add User Modal */}
       <Modal show={showModal} onHide={() => setShowModal(false)} centered size="lg">
         <Modal.Header closeButton>
           <Modal.Title>Add New User</Modal.Title>
@@ -438,7 +450,9 @@ const UserManagement = ({ adminColumns, instructorColumns, traineeColumns }) => 
                         : ""
                     }`}
                     value={form.confirmPassword}
-                    onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, confirmPassword: e.target.value })
+                    }
                     required
                   />
                   <button
@@ -446,7 +460,11 @@ const UserManagement = ({ adminColumns, instructorColumns, traineeColumns }) => 
                     className="btn btn-outline-secondary"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   >
-                    <i className={`bi ${showConfirmPassword ? "bi-eye-slash" : "bi-eye"}`}></i>
+                    <i
+                      className={`bi ${
+                        showConfirmPassword ? "bi-eye-slash" : "bi-eye"
+                      }`}
+                    ></i>
                   </button>
                 </div>
               </div>

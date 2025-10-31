@@ -1,29 +1,42 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import DashboardCard from "./DashboardCard";
 import Charts from "./Charts";
 import defaultAvatar from "../assets/default-avatar.png";
 import { API_BASE_URL } from "../api";
 
-const DashboardReusable = ({ userId, fetchUrl, cardsConfig }) => {
+const DashboardReusable = ({
+  userId,
+  fetchUrl,
+  cardsConfig,
+  refreshInterval = 30000
+}) => {
   const [user, setUser] = useState(null);
   const [stats, setStats] = useState({});
   const [uploading, setUploading] = useState(false);
 
-  // Fetch dashboard data dynamically
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = useCallback(async () => {
+    if (!userId) return;
+
     try {
       const res = await fetch(`${API_BASE_URL}${fetchUrl}/${userId}`);
       const data = await res.json();
+
       setUser(data.user || {});
-      setStats(data.stats || data); // If stats come directly
+      setStats(data.stats || data);
     } catch (err) {
       console.error("Dashboard fetch error:", err);
     }
-  };
+  }, [userId, fetchUrl]);
 
   useEffect(() => {
-    if (userId) fetchDashboardData();
-  }, [userId]);
+    fetchDashboardData();
+
+    const intervalId = setInterval(() => {
+      fetchDashboardData();
+    }, refreshInterval);
+
+    return () => clearInterval(intervalId);
+  }, [fetchDashboardData, refreshInterval]);
 
   const handleUpload = async (e) => {
     const file = e.target.files[0];
@@ -42,10 +55,7 @@ const DashboardReusable = ({ userId, fetchUrl, cardsConfig }) => {
       setUploading(false);
 
       if (data.imageUrl) {
-        setUser((prev) => ({
-          ...prev,
-          profile_picture: data.imageUrl,
-        }));
+        setUser((prev) => ({ ...prev, profile_picture: data.imageUrl }));
       }
     } catch (err) {
       console.error("Upload error:", err);
@@ -62,6 +72,9 @@ const DashboardReusable = ({ userId, fetchUrl, cardsConfig }) => {
 
   const profileImg = user.profile_picture || defaultAvatar;
 
+  // Determine chart type automatically
+  const chartType = user.role === "instructor" ? "instructor" : "admin";
+
   return (
     <div className="dashboard">
       <div className="dashboard-header">
@@ -75,24 +88,24 @@ const DashboardReusable = ({ userId, fetchUrl, cardsConfig }) => {
         </div>
       </div>
 
-      <h6 className="overview-text">Here’s an overview of your platform at a glance</h6>
+      <h6 className="overview-text">
+        Here’s an overview of your platform at a glance
+      </h6>
 
-      {/* Responsive grid */}
-    <div className="cards-grid">
-  {cardsConfig.map((card, index) => {
-    const value = card.key === "trainee_id" ? user[card.key] : stats[card.key];
-    return (
-      <DashboardCard
-        key={index}
-        label={card.label}
-        count={card.bold ? <strong>{value || "N/A"}</strong> : value || "N/A"}
-      />
-    );
-  })}
-</div>
+      <div className="cards-grid">
+        {cardsConfig.map((card, index) => {
+          const value = stats[card.key] ?? "N/A";
+          return (
+            <DashboardCard
+              key={index}
+              label={card.label}
+              count={card.bold ? <strong>{value}</strong> : value}
+            />
+          );
+        })}
+      </div>
 
-
-      <Charts data={stats} />
+      <Charts data={stats} chartType={chartType} />
     </div>
   );
 };

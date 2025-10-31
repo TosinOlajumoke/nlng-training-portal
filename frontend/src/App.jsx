@@ -15,14 +15,16 @@ import TraineeLayout from "./layouts/TraineeLayout";
 // 🧩 Admin pages
 import AdminDashboard from "./pages/admin/DashboardHomeAdmin";
 import AdminUsers from "./pages/admin/ManageUsers";
-import AdminSettings from "./pages/admin/SystemSettings";
+import ContentLibrary from "./pages/admin/ContentLibrary";
 import AdminReports from "./pages/admin/ReportsPage";
 
 // 🎓 Instructor pages
 import InstructorDashboardHome from "./pages/instructor/DashboardHomeInstructor"
-import InstructorCourses from "./pages/instructor/MyCoursesInstructor"
+import MyCoursesInstructor from "./pages/instructor/MyCoursesInstructor";
 import InstructorTrainee from "./pages/instructor/EnrollTrainee";
 import InstructorSummary from "./pages/instructor/ProgressSummaryInstructor";
+
+
 
 // 👨‍💻 Trainee pages
 import TraineeDashboardHome from "./pages/trainee/DashboardHomeTrainee";
@@ -70,7 +72,7 @@ export default function App() {
           <Route index element={<AdminDashboard />} />
           <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="users" element={<AdminUsers />} />
-          <Route path="settings" element={<AdminSettings />} />
+          <Route path="contents" element={<ContentLibrary />} />
           <Route path="reports" element={<AdminReports />} />
         </Route>
 
@@ -87,10 +89,12 @@ export default function App() {
         >
           <Route index element={<InstructorDashboardHome />} />
          <Route path="dashboard" element={<InstructorDashboardHome />} />
-        <Route path="my-courses" element={<InstructorCourses />} />
+        <Route path="my-courses" element={<MyCoursesInstructor />} />
         <Route path="enroll-trainee" element={<InstructorTrainee />} />
         <Route path="progress-summary" element={<InstructorSummary />} />
         </Route>
+
+
 
         {/* ===================================================
            👨‍💻 TRAINEE ROUTES

@@ -77,6 +77,7 @@ app.use((req, res, next) => {
 // Serve uploads directory (profile pictures, etc.)
 app.use("/uploads", express.static(path.resolve("uploads")));
 app.use("/uploads/profile_pics", express.static(path.resolve("uploads/profile_pics")));
+app.use("/uploads/module_uploads", express.static(path.resolve("uploads/module_uploads")));
 
 // ====================================================
 // 🔐 API Routes

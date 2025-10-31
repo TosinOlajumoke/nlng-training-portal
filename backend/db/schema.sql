@@ -14,6 +14,34 @@ CREATE TABLE IF NOT EXISTS users (
   created_at TIMESTAMP DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS contents (
+  id SERIAL PRIMARY KEY,
+  title VARCHAR(255) NOT NULL,
+  instructor_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS modules (
+  id SERIAL PRIMARY KEY,
+  content_id INTEGER REFERENCES contents(id) ON DELETE CASCADE,
+  title VARCHAR(255) NOT NULL,
+  description TEXT,
+  meta_description VARCHAR(255),
+  image_path TEXT,
+  video_url VARCHAR(500),
+  materials_path TEXT,
+  vr_content_path TEXT,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS module_enrollments (
+  id SERIAL PRIMARY KEY,
+  module_id INTEGER REFERENCES modules(id) ON DELETE CASCADE,
+  trainee_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  enrolled_at TIMESTAMP DEFAULT NOW()
+);
+
+
 -- ==========================================
 -- PASSWORD RESET TOKENS TABLE (OPTIONAL)
 -- ==========================================

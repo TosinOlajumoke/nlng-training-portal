@@ -2,13 +2,13 @@ import React from "react";
 import NavbarCommon from "../components/NavbarCommon";
 import SidebarReusable from "../components/SidebarReusable";
 import { Outlet } from "react-router-dom";
-import { FaTachometerAlt, FaUsers, FaCogs, FaChartBar } from "react-icons/fa";
+import { FaTachometerAlt, FaUsers, FaBookOpen, FaChartBar } from "react-icons/fa";
 
 const AdminLayout = () => {
   const menuItems = [
     { label: "Dashboard", path: "/admin", icon: <FaTachometerAlt /> },
     { label: "User Management", path: "/admin/users", icon: <FaUsers /> },
-    { label: "System Setting", path: "/admin/settings", icon: <FaCogs /> },
+    { label: "Content Library", path: "/admin/contents", icon: <FaBookOpen /> },
     { label: "Reports", path: "/admin/reports", icon: <FaChartBar /> },
   ];
 

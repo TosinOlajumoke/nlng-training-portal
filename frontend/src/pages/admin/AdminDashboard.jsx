@@ -2,7 +2,7 @@ import React from "react";
 import { Routes, Route } from "react-router-dom";
 import DashboardHomeAdmin from "./DashboardHomeAdmin";
 import ManageUsers from "./ManageUsers";
-import SystemSettings from "./SystemSettings";
+import ContentLibrary from "./ContentLibrary";
 import ReportsPage from "./ReportsPage";
 import AdminLayout from "../../layouts/AdminLayout";
 
@@ -12,7 +12,7 @@ const AdminDashboard = () => {
       <Route element={<AdminLayout />}>
         <Route index element={<DashboardHomeAdmin />} />
         <Route path="users" element={<ManageUsers />} />
-        <Route path="settings" element={<SystemSettings />} />
+        <Route path="settings" element={<ContentLibrary />} />
         <Route path="reports" element={<ReportsPage />} />
       </Route>
     </Routes>

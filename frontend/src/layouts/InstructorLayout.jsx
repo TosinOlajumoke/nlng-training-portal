@@ -18,12 +18,12 @@ const InstructorLayout = () => {
       icon: <FaTachometerAlt />,
     },
      {
-      label: "My Courses",
+      label: "Content Library",
       path: "/instructor/my-courses",
       icon: <FaBookOpen />,
     },
     {
-      label: "Enroll Trainee",
+      label: "Enrolled Trainee",
       path: "/instructor/enroll-trainee",
       icon: <FaUserPlus />,
     },   

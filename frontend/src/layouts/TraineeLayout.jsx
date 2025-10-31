@@ -15,7 +15,7 @@ const TraineeLayout = () => {
       label: "Dashboard", path: "/trainee", icon: <FaTachometerAlt />,
     },
     {
-      label: "My Courses",
+      label: "My Modules",
       path: "/trainee/my-courses",
       icon: <FaBookOpen />,
     },
