@@ -12,7 +12,8 @@ import {
   getInstructorContents,
   createModuleWithEnrollments,
   getModulesWithEnrollmentsForContent,
-  getAllTrainees 
+  getAllTrainees,
+  getTraineeEnrollments,
 } from "../controllers/userController.js";
 import { pool } from "../config/db.js";
 import multer from "multer";
@@ -165,6 +166,9 @@ router.post(
 router.get("/modules/content/:contentId", getModulesWithEnrollmentsForContent);
 
 // ====================================================
+
+// Trainee enrollments
+router.get("/trainee/:id/enrollments", getTraineeEnrollments);
 
 
 export default router;

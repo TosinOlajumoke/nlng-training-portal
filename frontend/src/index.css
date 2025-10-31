@@ -520,3 +520,34 @@ body {
   overflow-x: auto;
 }
 
+/* Deep green Take Module button */
+.take-module-btn {
+  background-color: #006400 !important; /* Deep green */
+  border-color: #006400 !important;
+}
+
+.take-module-btn:hover {
+  background-color: #004d00 !important;
+  border-color: #004d00 !important;
+}
+
+/* Custom modal width and height */
+.custom-modal-80 {
+  max-width: 80% !important;
+  width: 80% !important;
+}
+
+.custom-modal-80 .modal-content {
+  height: 80vh; /* 80% of screen height */
+  overflow-y: auto;
+}
+
+@media (max-width: 768px) {
+  .custom-modal-80 {
+    max-width: 95% !important;
+    width: 95% !important;
+  }
+  .custom-modal-80 .modal-content {
+    height: auto;
+  }
+}

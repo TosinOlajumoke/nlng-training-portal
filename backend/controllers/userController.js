@@ -376,3 +376,38 @@ export const getAllTrainees = async (req, res) => {
     res.status(500).json({ error: "Server error fetching trainees" });
   }
 };
+
+
+// GET /api/users/trainee/:id/enrollments
+export const getTraineeEnrollments = async (req, res) => {
+  const traineeId = req.params.id;
+
+  try {
+    const query = `
+      SELECT 
+        me.id AS enrollment_id,
+        me.enrolled_at,
+        m.id AS module_id,
+        m.title AS module_title,
+        m.description AS module_description,
+        m.video_url,
+        m.materials_path,
+        m.vr_content_path,
+        m.image_path,
+        c.id AS course_id,
+        c.title AS course_title
+      FROM module_enrollments me
+      JOIN modules m ON me.module_id = m.id
+      JOIN contents c ON m.content_id = c.id
+      WHERE me.trainee_id = $1
+      ORDER BY me.enrolled_at DESC
+    `;
+
+    const { rows } = await pool.query(query, [traineeId]);
+
+    return res.json(rows); // sends an array of enrollments
+  } catch (err) {
+    console.error("Error fetching trainee enrollments:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};
