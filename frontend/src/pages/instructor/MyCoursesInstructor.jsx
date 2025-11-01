@@ -1,7 +1,16 @@
 // src/pages/instructor/MyCoursesInstructor.jsx
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { Table, Spinner, Alert, Button, Modal, Form, Toast, ToastContainer } from "react-bootstrap";
+import {
+  Table,
+  Spinner,
+  Alert,
+  Button,
+  Modal,
+  Form,
+  Toast,
+  ToastContainer,
+} from "react-bootstrap";
 import { useAuth } from "../../context/AuthContext";
 
 const MyCoursesInstructor = () => {
@@ -42,7 +51,6 @@ const MyCoursesInstructor = () => {
 
         const tRes = await axios.get("/api/users/trainees");
         setTraineesList(tRes.data);
-
       } catch (err) {
         console.error(err);
         setError("Failed to fetch your data. Please try again.");
@@ -69,14 +77,12 @@ const MyCoursesInstructor = () => {
     setShowModal(true);
   };
 
-  const handleCloseModal = () => {
-    setShowModal(false);
-  };
+  const handleCloseModal = () => setShowModal(false);
 
   const handleSubmitModule = async (e) => {
     e.preventDefault();
 
-    // Validation: Ensure all required fields are filled
+    // ✅ Validation
     if (
       !moduleTitle ||
       !moduleDesc ||
@@ -107,11 +113,10 @@ const MyCoursesInstructor = () => {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
+      setShowToast(true);
       handleCloseModal();
-      setShowToast(true); // Show success toast
-
     } catch (err) {
-      console.error("Error submitting module form:", err);
+      console.error("❌ Error submitting module form:", err.response?.data || err.message);
       alert("Failed to save module/enrollment. Please try again.");
     }
   };
@@ -125,9 +130,13 @@ const MyCoursesInstructor = () => {
           <Spinner animation="border" variant="success" />
         </div>
       ) : error ? (
-        <Alert variant="danger" className="text-center">{error}</Alert>
+        <Alert variant="danger" className="text-center">
+          {error}
+        </Alert>
       ) : courses.length === 0 ? (
-        <Alert variant="info" className="text-center">You have no courses assigned yet.</Alert>
+        <Alert variant="info" className="text-center">
+          You have no courses assigned yet.
+        </Alert>
       ) : (
         <>
           <Table striped bordered hover responsive>
@@ -148,7 +157,7 @@ const MyCoursesInstructor = () => {
                       style={{ backgroundColor: "#006400", borderColor: "#006400" }}
                       onClick={() => handleOpenModal(c.content_id, c.content_title)}
                     >
-                      Manage Modules & Enroll Trainees
+                      Add Module & Enroll Trainees
                     </Button>
                   </td>
                 </tr>
@@ -158,11 +167,13 @@ const MyCoursesInstructor = () => {
         </>
       )}
 
-      {/* Modal Form */}
+      {/* ✅ Modal Form */}
       <Modal show={showModal} onHide={handleCloseModal} size="lg">
         <Modal.Header closeButton>
           <Modal.Title>
-            {selectedContentTitle ? `Add Module for: ${selectedContentTitle}` : "Add Module"}
+            {selectedContentTitle
+              ? `Add Module for: ${selectedContentTitle}`
+              : "Add Module"}
           </Modal.Title>
         </Modal.Header>
         <Modal.Body>
@@ -202,7 +213,7 @@ const MyCoursesInstructor = () => {
             </Form.Group>
 
             <Form.Group className="mb-3">
-              <Form.Label>Image (for trainee quick identification)</Form.Label>
+              <Form.Label>Module Image</Form.Label>
               <Form.Control
                 type="file"
                 accept="image/*"
@@ -217,13 +228,13 @@ const MyCoursesInstructor = () => {
                 type="url"
                 value={moduleVideoURL}
                 onChange={(e) => setModuleVideoURL(e.target.value)}
-                placeholder="https://"
+                placeholder="https://youtube.com/..."
                 required
               />
             </Form.Group>
 
             <Form.Group className="mb-3">
-              <Form.Label>Materials (file)</Form.Label>
+              <Form.Label>Materials (PDF, PPT, etc.)</Form.Label>
               <Form.Control
                 type="file"
                 onChange={(e) => setModuleMaterialsFile(e.target.files[0])}
@@ -232,7 +243,7 @@ const MyCoursesInstructor = () => {
             </Form.Group>
 
             <Form.Group className="mb-3">
-              <Form.Label>Virtual Reality Content (file)</Form.Label>
+              <Form.Label>VR Content (zip, 3D, or interactive file)</Form.Label>
               <Form.Control
                 type="file"
                 onChange={(e) => setModuleVRFile(e.target.files[0])}
@@ -245,13 +256,14 @@ const MyCoursesInstructor = () => {
               <Form.Select
                 multiple
                 value={selectedTrainees}
-                onChange={(e) => {
-                  const opts = Array.from(e.target.selectedOptions).map(o => o.value);
-                  setSelectedTrainees(opts);
-                }}
+                onChange={(e) =>
+                  setSelectedTrainees(
+                    Array.from(e.target.selectedOptions).map((o) => o.value)
+                  )
+                }
                 required
               >
-                {traineesList.map(t => (
+                {traineesList.map((t) => (
                   <option key={t.id} value={t.id}>
                     {t.first_name} {t.last_name} (ID: {t.trainee_id})
                   </option>
@@ -266,13 +278,13 @@ const MyCoursesInstructor = () => {
               style={{ backgroundColor: "#006400", borderColor: "#006400" }}
               type="submit"
             >
-              Save Module & Enroll Trainees
+              Save Module & Enroll
             </Button>
           </Form>
         </Modal.Body>
       </Modal>
 
-      {/* Toast Notification */}
+      {/* ✅ Toast Notification */}
       <ToastContainer className="p-3" position="top-end">
         <Toast
           bg="success"
@@ -282,7 +294,7 @@ const MyCoursesInstructor = () => {
           autohide
         >
           <Toast.Body className="text-white">
-            Module saved and Trainee Enrolled successfully
+            ✅ Module saved and trainees enrolled successfully!
           </Toast.Body>
         </Toast>
       </ToastContainer>

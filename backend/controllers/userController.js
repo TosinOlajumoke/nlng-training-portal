@@ -24,39 +24,219 @@ export const upload = multer({ storage });
 // ====================================================
 // 📊 Dashboard Data
 // ====================================================
+/**
+ * GET /api/users/dashboard/:id
+ * Returns dashboard data according to user role
+ */
 export const getDashboardData = async (req, res) => {
-  const { userId } = req.params;
+  const userId = Number(req.params.id);
 
   try {
-    const userRes = await pool.query(
-      `SELECT id, first_name, last_name, email, role, title, trainee_id, profile_picture, created_at 
+    // Fetch user basic info
+    const { rows: userRows } = await pool.query(
+      `SELECT id, first_name, last_name, role, title, profile_picture, trainee_id
        FROM users WHERE id = $1`,
       [userId]
     );
 
-    if (userRes.rowCount === 0)
-      return res.status(404).json({ message: "User not found" });
+    if (!userRows.length) return res.status(404).json({ message: "User not found" });
 
-    let user = userRes.rows[0];
+    const user = userRows[0];
+    const role = user.role;
 
-    // Ensure profile_picture is full URL
-    if (user.profile_picture && !user.profile_picture.startsWith("http")) {
-      user.profile_picture = `${req.protocol}://${req.get("host")}${user.profile_picture}`;
+    /** ---------- ADMIN ---------- */
+    if (role === "admin") {
+      const [
+        totalUsersRes,
+        totalAdminsRes,
+        totalInstructorsRes,
+        totalTraineesRes,
+      ] = await Promise.all([
+        pool.query("SELECT COUNT(*) FROM users"),
+        pool.query("SELECT COUNT(*) FROM users WHERE role = 'admin'"),
+        pool.query("SELECT COUNT(*) FROM users WHERE role = 'instructor'"),
+        pool.query("SELECT COUNT(*) FROM users WHERE role = 'trainee'"),
+      ]);
+
+      const total_users = parseInt(totalUsersRes.rows[0].count, 10);
+      const total_admins = parseInt(totalAdminsRes.rows[0].count, 10);
+      const total_instructors = parseInt(totalInstructorsRes.rows[0].count, 10);
+      const total_trainees = parseInt(totalTraineesRes.rows[0].count, 10);
+
+      // Distribution suitable for pie/bar charts
+      const roleDistribution = [
+        { name: "Admins", value: total_admins },
+        { name: "Instructors", value: total_instructors },
+        { name: "Trainees", value: total_trainees },
+      ];
+
+      return res.json({
+        user,
+        stats: {
+          total_users,
+          total_admins,
+          total_instructors,
+          total_trainees,
+          role_distribution: roleDistribution,
+        },
+      });
     }
 
-    const statsRes = await pool.query(`
-      SELECT 
-        COUNT(*) FILTER (WHERE role = 'admin') AS total_admins,
-        COUNT(*) FILTER (WHERE role = 'instructor') AS total_instructors,
-        COUNT(*) FILTER (WHERE role = 'trainee') AS total_trainees,
-        COUNT(*) AS total_users
-      FROM users;
-    `);
+    /** ---------- INSTRUCTOR ---------- */
+    if (role === "instructor") {
+      // Get contents for this instructor
+      const contentsRes = await pool.query(
+        `SELECT id, title, created_at
+         FROM contents
+         WHERE instructor_id = $1`,
+        [userId]
+      );
 
-    res.json({ user, stats: statsRes.rows[0] });
+      const contents = contentsRes.rows;
+
+      // For each content, get modules, and for each module count enrolled trainees
+      const contentDetails = [];
+
+      let totalModules = 0;
+      const traineeSet = new Set();
+
+      for (const content of contents) {
+        const modulesRes = await pool.query(
+          `SELECT id, title
+           FROM modules
+           WHERE content_id = $1`,
+          [content.id]
+        );
+        const modules = modulesRes.rows;
+
+        const modulesWithCounts = [];
+
+        for (const mod of modules) {
+          // count trainees enrolled in the module
+          const enrolledCountRes = await pool.query(
+            `SELECT COUNT(*) FROM module_enrollments WHERE module_id = $1`,
+            [mod.id]
+          );
+          const trainees_count = parseInt(enrolledCountRes.rows[0].count, 10) || 0;
+
+          // track unique trainee ids for total trainees
+          if (trainees_count > 0) {
+            const traineeIdsRes = await pool.query(
+              `SELECT DISTINCT trainee_id FROM module_enrollments WHERE module_id = $1`,
+              [mod.id]
+            );
+            traineeIdsRes.rows.forEach(r => traineeSet.add(r.trainee_id));
+          }
+
+          modulesWithCounts.push({
+            id: mod.id,
+            title: mod.title,
+            trainees_count,
+          });
+        }
+
+        totalModules += modulesWithCounts.length;
+
+        contentDetails.push({
+          id: content.id,
+          title: content.title,
+          modules: modulesWithCounts,
+        });
+      }
+
+      const totalContents = contents.length;
+      const totalTrainees = traineeSet.size;
+
+      // Build payload suitable for donut + stacked/clustered charts
+      return res.json({
+        user,
+        stats: {
+          total_contents: totalContents,
+          total_modules: totalModules,
+          total_trainees: totalTrainees,
+          contents: contentDetails, // [{title, modules:[{title, trainees_count}]}]
+        },
+      });
+    }
+
+    /** ---------- TRAINEE ---------- */
+    if (role === "trainee") {
+      // Trainee is user.id in our schema (module_enrollments.trainee_id references users.id)
+      const traineeId = userId;
+
+      // All module enrollments with module & content info and progress (if any)
+      const enrollmentsRes = await pool.query(
+        `SELECT me.module_id, m.title AS module_title, m.content_id, c.title AS content_title,
+                COALESCE(p.status, 'in_progress') AS status
+         FROM module_enrollments me
+         JOIN modules m ON me.module_id = m.id
+         JOIN contents c ON m.content_id = c.id
+         LEFT JOIN progress p ON p.trainee_id = me.trainee_id AND p.module_id = me.module_id
+         WHERE me.trainee_id = $1`,
+        [traineeId]
+      );
+
+      const enrolledRows = enrollmentsRes.rows || [];
+      const total_modules_enrolled = enrolledRows.length;
+
+      // Completed modules
+      const total_modules_completed = enrolledRows.filter(r => r.status === 'completed').length;
+
+      // Group modules by content to compute courses enrolled/completed and for stacked chart
+      const modulesByContent = {};
+      for (const row of enrolledRows) {
+        const cid = row.content_id;
+        if (!modulesByContent[cid]) {
+          modulesByContent[cid] = {
+            content_id: cid,
+            content_title: row.content_title,
+            modules: [],
+          };
+        }
+        modulesByContent[cid].modules.push({
+          module_id: row.module_id,
+          module_title: row.module_title,
+          status: row.status,
+        });
+      }
+
+      const contentGroups = Object.values(modulesByContent);
+      const total_courses_enrolled = contentGroups.length;
+
+      // Completed courses: a course is completed if all its modules are completed
+      const total_courses_completed = contentGroups.filter(g =>
+        g.modules.length > 0 && g.modules.every(m => m.status === 'completed')
+      ).length;
+
+      // Produce stacked chart data: each content -> modules with status counts
+      // We'll create an array of objects { content_title, [moduleTitle]: traineeCount } but for a single trainee,
+      // traineeCount is 1 if enrolled, 0 otherwise; instead we will pass the enrolled modules with their status,
+      // and frontend can display stacked chart across multiple trainees (if needed). For simplicity, provide:
+      // stackedPerContent = [{ content_title, modules: [{ module_title, status }] }]
+      const stackedPerContent = contentGroups.map(g => ({
+        content_id: g.content_id,
+        content_title: g.content_title,
+        modules: g.modules, // module_title + status
+      }));
+
+      return res.json({
+        user,
+        stats: {
+          trainee_id: user.trainee_id || String(user.id),
+          total_courses_enrolled,
+          total_modules_enrolled,
+          total_modules_completed,
+          total_courses_completed,
+          enrolled_modules: enrolledRows, // for progress distribution table
+          stacked_per_content: stackedPerContent,
+        },
+      });
+    }
+
+    return res.status(400).json({ message: "Invalid role" });
   } catch (err) {
-    console.error("Dashboard error:", err);
-    res.status(500).json({ message: "Error fetching dashboard data" });
+    console.error("getDashboardData error:", err);
+    return res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -409,5 +589,56 @@ export const getTraineeEnrollments = async (req, res) => {
   } catch (err) {
     console.error("Error fetching trainee enrollments:", err);
     return res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+
+// ✅ Fetch trainee module progress
+export const getTraineeProgress = async (req, res) => {
+  const { traineeId } = req.params;
+
+  try {
+    const result = await pool.query(
+      "SELECT module_id, status FROM progress WHERE trainee_id = $1",
+      [traineeId]
+    );
+
+    // Return as an object like { "1": "completed", "2": "in_progress" }
+    const progressMap = {};
+    result.rows.forEach((row) => {
+      progressMap[row.module_id] = row.status;
+    });
+
+    res.json(progressMap);
+  } catch (err) {
+    console.error("Error fetching progress:", err);
+    res.status(500).json({ message: "Failed to fetch progress" });
+  }
+};
+
+// ✅ Save or update trainee module progress
+export const updateTraineeProgress = async (req, res) => {
+  const { traineeId, moduleId, status } = req.body;
+
+  if (!traineeId || !moduleId || !status) {
+    return res.status(400).json({ message: "Missing required fields" });
+  }
+
+  try {
+    // Upsert-like logic for PostgreSQL
+    await pool.query(
+      `
+      INSERT INTO progress (trainee_id, module_id, status, updated_at)
+      VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
+      ON CONFLICT (trainee_id, module_id)
+      DO UPDATE SET status = EXCLUDED.status, updated_at = CURRENT_TIMESTAMP
+      `,
+      [traineeId, moduleId, status]
+    );
+
+    res.json({ success: true, message: "Progress updated successfully" });
+  } catch (err) {
+    console.error("Error updating progress:", err);
+    res.status(500).json({ message: "Failed to update progress" });
   }
 };

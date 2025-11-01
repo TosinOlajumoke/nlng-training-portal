@@ -72,12 +72,9 @@ app.use((req, res, next) => {
 });
 
 // ====================================================
-// 🌐 Serve Static Files
-// ====================================================
-// Serve uploads directory (profile pictures, etc.)
-app.use("/uploads", express.static(path.resolve("uploads")));
-app.use("/uploads/profile_pics", express.static(path.resolve("uploads/profile_pics")));
-app.use("/uploads/module_uploads", express.static(path.resolve("uploads/module_uploads")));
+// Serve uploads folder statically
+app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
+
 
 // ====================================================
 // 🔐 API Routes

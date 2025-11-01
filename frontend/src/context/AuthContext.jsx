@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
+import { API_BASE_URL } from "../api";
 
 const AuthContext = createContext();
 
@@ -15,6 +16,15 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => { if(user) localStorage.setItem("auth_user", JSON.stringify(user)); else localStorage.removeItem("auth_user"); }, [user]);
   useEffect(() => { if(token) localStorage.setItem("auth_token", token); else localStorage.removeItem("auth_token"); }, [token]);
+  useEffect(() => {
+  if (token) {
+    fetch(`${API_BASE_URL}/users/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => res.json())
+      .then((data) => setUser(data.user));
+  }
+}, [token]);
 
   const login = useCallback((userData, authToken) => { setUser(userData); setToken(authToken); }, []);
   const logout = useCallback(() => { setUser(null); setToken(null); localStorage.removeItem("auth_user"); localStorage.removeItem("auth_token"); }, []);

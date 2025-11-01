@@ -14,18 +14,19 @@ import {
   getModulesWithEnrollmentsForContent,
   getAllTrainees,
   getTraineeEnrollments,
+  getTraineeProgress, 
+  updateTraineeProgress 
 } from "../controllers/userController.js";
 import { pool } from "../config/db.js";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
 
+
 const router = express.Router();
 
-// ====================================================
-// 📊 DASHBOARD ROUTE
-// ====================================================
-router.get("/dashboard/:userId", getDashboardData);
+// Dashboard route
+router.get("/dashboard/:id", getDashboardData);
 
 // ====================================================
 // 👥 USER MANAGEMENT ROUTES (Admin Panel)
@@ -53,6 +54,7 @@ router.post(
   },
   uploadProfilePicture
 );
+
 
 // ====================================================
 // GET all instructors (for admin dropdowns)
@@ -169,6 +171,12 @@ router.get("/modules/content/:contentId", getModulesWithEnrollmentsForContent);
 
 // Trainee enrollments
 router.get("/trainee/:id/enrollments", getTraineeEnrollments);
+
+// ✅ Get trainee progress
+router.get("/progress/:traineeId", getTraineeProgress);
+
+// ✅ Mark module as completed (or update status)
+router.post("/progress", updateTraineeProgress);
 
 
 export default router;

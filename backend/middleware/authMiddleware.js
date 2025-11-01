@@ -1,4 +1,6 @@
 import jwt from "jsonwebtoken";
+import multer from "multer";
+import path from "path";
 const JWT_SECRET = process.env.JWT_SECRET || "replace_with_secret";
 export function verifyToken(req, res, next) {
   const authHeader = req.headers.authorization;
@@ -24,3 +26,25 @@ export function isTrainee(req, res, next) {
   if (!req.user || req.user.role !== "trainee") return res.status(403).json({ error: "Trainee access required" });
   next();
 }
+
+// / Set up storage for Multer
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, "uploads/");
+  },
+  filename: function (req, file, cb) {
+    cb(
+      null,
+      file.fieldname + "-" + Date.now() + path.extname(file.originalname)
+    );
+  },
+});
+
+export const uploadModuleFiles = multer({
+  storage,
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB max
+}).fields([
+  { name: "image", maxCount: 1 },
+  { name: "materials", maxCount: 1 },
+  { name: "vr_content", maxCount: 1 },
+]);

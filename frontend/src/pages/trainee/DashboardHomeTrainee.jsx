@@ -1,24 +1,19 @@
+// pages/trainee/DashboardHomeTrainee.jsx
 import React from "react";
 import DashboardReusable from "../../components/DashboardReusable";
-import { useAuth } from "../../context/AuthContext";
 
 const DashboardHomeTrainee = () => {
-  const { user } = useAuth(); // ✅ Get current logged-in user
-
-  // Config for admin dashboard cards
-  const adminCardsConfig = [
-     { label: "Your Trainee ID is:", key: "trainee_id", bold: true },
-    { label: "Total Courses", key: "total_admins" },
-    { label: "Total Courses Completed", key: "total_instructors" },
-   ];
+  const traineeCardsConfig = [
+    { label: "Trainee ID", key: "trainee_id" },
+    { label: "Courses Enrolled", key: "total_courses_enrolled" },
+    { label: "Modules Enrolled", key: "total_modules_enrolled" },
+    { label: "Completed Modules", key: "total_modules_completed" },
+    { label: "Completed Courses", key: "total_courses_completed" },
+  ];
 
   return (
     <div className="page-content">
-      <DashboardReusable
-        userId={user?.id}
-        fetchUrl="/users/dashboard"
-        cardsConfig={adminCardsConfig}
-      />
+      <DashboardReusable fetchUrl="/users/dashboard" cardsConfig={traineeCardsConfig} />
     </div>
   );
 };

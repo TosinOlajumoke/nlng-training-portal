@@ -42,6 +42,16 @@ CREATE TABLE IF NOT EXISTS module_enrollments (
 );
 
 
+CREATE TABLE progress (
+  trainee_id INT NOT NULL,
+  module_id INT NOT NULL,
+  status VARCHAR(20) DEFAULT 'in_progress' CHECK (status IN ('in_progress', 'completed')),
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (trainee_id, module_id)
+);
+
+
+
 -- ==========================================
 -- PASSWORD RESET TOKENS TABLE (OPTIONAL)
 -- ==========================================
