@@ -1,6 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
-
 // 🔐 Auth pages
 import Login from "./pages/Auth/Login";
 import Signup from "./pages/Auth/Signup";
@@ -62,13 +61,10 @@ export default function App() {
            🧭 ADMIN ROUTES
            =================================================== */}
         <Route
-          path="/admin"
-          element={
-            <ProtectedRoute roles={["admin"]}>
-              <AdminLayout />
-            </ProtectedRoute>
-          }
-        >
+          path="/admin" element={ <ProtectedRoute roles={["admin"]}> 
+          <AdminLayout /> 
+          </ProtectedRoute>
+         }>
           <Route index element={<AdminDashboard />} />
           <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="users" element={<AdminUsers />} />
@@ -80,13 +76,10 @@ export default function App() {
            🎓 INSTRUCTOR ROUTES
            =================================================== */}
         <Route
-          path="/instructor"
-          element={
-            <ProtectedRoute roles={["instructor"]}>
-              <InstructorLayout />
-            </ProtectedRoute>
-          }
-        >
+          path="/instructor" element={<ProtectedRoute roles={["instructor"]}>
+          <InstructorLayout />
+          </ProtectedRoute>
+          }>
           <Route index element={<InstructorDashboardHome />} />
          <Route path="dashboard" element={<InstructorDashboardHome />} />
         <Route path="my-courses" element={<MyCoursesInstructor />} />
@@ -94,19 +87,14 @@ export default function App() {
         <Route path="progress-summary" element={<InstructorSummary />} />
         </Route>
 
-
-
         {/* ===================================================
            👨‍💻 TRAINEE ROUTES
            =================================================== */}
        <Route
-          path="/trainee"
-          element={
-            <ProtectedRoute roles={["trainee"]}>
+          path="/trainee" element={<ProtectedRoute roles={["trainee"]}>
               <TraineeLayout />
             </ProtectedRoute>
-          }
-        >
+          }>
           <Route index element={<TraineeDashboardHome />} />
          <Route path="dashboard" element={<TraineeDashboardHome />} />
         <Route path="my-courses" element={<TraineeCourses />} />
@@ -117,8 +105,7 @@ export default function App() {
            ⚠️ 404 FALLBACK
            =================================================== */}
         <Route
-          path="*"
-          element={
+          path="*" element={
             <div className="text-center mt-5 text-muted">
               <h2>404 - Page Not Found</h2>
               <p>The page you’re looking for doesn’t exist.</p>

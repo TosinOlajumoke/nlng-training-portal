@@ -18,13 +18,20 @@ export default function Signup() {
   const [show, setShow] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // ✅ Generate trainee ID
   const generateTraineeId = () => {
     const randomNum = Math.floor(Math.random() * 9000) + 1000;
     return `NLNG/T/${randomNum}`;
   };
 
+  // ✅ Capitalize helper
+  const capitalize = (str) =>
+    str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+
+  // ✅ Submit form
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     if (password !== confirmPassword) {
       toast.error("❌ Passwords do not match!");
       return;
@@ -35,15 +42,18 @@ export default function Signup() {
     if (role === "trainee") traineeId = generateTraineeId();
 
     try {
-      await axios.post("http://localhost:5000/api/auth/signup", {
+      // ✅ Capitalize names before sending
+      const payload = {
         email,
         password,
         role,
-        first_name: firstName,
-        last_name: lastName,
+        first_name: capitalize(firstName.trim()),
+        last_name: capitalize(lastName.trim()),
         title,
         trainee_id: traineeId,
-      });
+      };
+
+      await axios.post("http://localhost:5000/api/auth/signup", payload);
       toast.success("✅ Registration successful! You can now login.");
       setTimeout(() => navigate("/login"), 1500);
     } catch (err) {
@@ -210,4 +220,3 @@ export default function Signup() {
     </>
   );
 }
-

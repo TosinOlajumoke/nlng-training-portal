@@ -24,7 +24,8 @@ const config = DATABASE_URL
 // Create pool
 export const pool = new Pool(config);
 
-// Test connection
-pool.connect()
-  .then(() => console.log("✅ Connected to PostgreSQL"))
-  .catch((err) => console.error("❌ Database connection failed:", err));
+// ✅ Test Connection
+pool
+  .connect()
+  .then(() => console.log("✅ PostgreSQL connected successfully"))
+  .catch((err) => console.error("❌ PostgreSQL connection error:", err.message));

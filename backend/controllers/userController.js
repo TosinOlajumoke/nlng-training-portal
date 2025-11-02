@@ -3,6 +3,9 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import bcrypt from "bcrypt";
+import { sendAccountEmail } from "../utils/mailer.js";
+
+
 
 // ====================================================
 // 🔧 Multer configuration for profile uploads
@@ -301,30 +304,53 @@ export const getAllUsers = async (req, res) => {
   }
 };
 
-// ➕ Add new user
+// ➕ Add new user with email
 export const addUser = async (req, res) => {
-  try {
-    const { first_name, last_name, email, password, role, title, trainee_id } = req.body;
+try {
+let { first_name, last_name, email, password, role, title, trainee_id } = req.body;
 
-    // Check if email already exists
-    const exists = await pool.query("SELECT id FROM users WHERE email = $1", [email]);
-    if (exists.rowCount > 0)
-      return res.status(400).json({ error: "Email already exists" });
+// Check if email already exists
+const exists = await pool.query("SELECT id FROM users WHERE email = $1", [email]);
+if (exists.rowCount > 0)
+  return res.status(400).json({ error: "Email already exists" });
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+if (!password) {
+  return res.status(400).json({ error: "Password is required" });
+}
 
-    const insertRes = await pool.query(
-      `INSERT INTO users (first_name, last_name, email, password_hash, role, title, trainee_id)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
-       RETURNING id, first_name, last_name, email, role, title, trainee_id, created_at`,
-      [first_name, last_name, email, hashedPassword, role, title || null, trainee_id || null]
-    );
+const hashedPassword = await bcrypt.hash(password, 10);
 
-    res.status(201).json(insertRes.rows[0]);
-  } catch (err) {
-    console.error("Error adding user:", err);
-    res.status(500).json({ error: "Failed to create user" });
-  }
+// Insert user
+const insertRes = await pool.query(
+  `INSERT INTO users (first_name, last_name, email, password_hash, role, title, trainee_id)
+   VALUES ($1, $2, $3, $4, $5, $6, $7)
+   RETURNING id, first_name, last_name, email, role, title, trainee_id, created_at`,
+  [first_name, last_name, email, hashedPassword, role, title || null, trainee_id || null]
+);
+
+const newUser = insertRes.rows[0];
+
+// Send account email
+try {
+  await sendAccountEmail({
+    first_name: newUser.first_name,
+    last_name: newUser.last_name,
+    email: newUser.email,
+    role: newUser.role,
+    trainee_id: newUser.trainee_id,
+    password_plain: password, // admin-provided password
+  });
+} catch (err) {
+  console.error("Failed to send account email:", err);
+  // Continue even if email fails
+}
+
+res.status(201).json(newUser);
+
+} catch (err) {
+console.error("Error adding user:", err);
+res.status(500).json({ error: "Failed to create user" });
+}
 };
 
 // ❌ Delete user (except first admin)

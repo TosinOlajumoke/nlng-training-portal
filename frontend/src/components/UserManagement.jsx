@@ -1,3 +1,4 @@
+// src/pages/admin/UserManagement.jsx
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
@@ -6,6 +7,7 @@ import { saveAs } from "file-saver";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import "react-toastify/dist/ReactToastify.css";
+import { API_BASE_URL } from "../api"; // ✅ centralized import
 
 const UserManagement = ({ adminColumns, instructorColumns, traineeColumns }) => {
   const [users, setUsers] = useState([]);
@@ -47,10 +49,10 @@ const UserManagement = ({ adminColumns, instructorColumns, traineeColumns }) => 
     return `NLNG/T/${randomNum}`;
   };
 
-  // Fetch all users
+  // ✅ Fetch all users
   const fetchUsers = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/users");
+      const res = await axios.get(`${API_BASE_URL}/users`);
       setUsers(res.data);
     } catch (err) {
       toast.error("Failed to fetch users.");
@@ -75,6 +77,15 @@ const UserManagement = ({ adminColumns, instructorColumns, traineeColumns }) => 
     }
   }, [form.confirmPassword, form.password]);
 
+  // ✅ Capitalize function
+  const capitalizeName = (name) => {
+    if (!name) return "";
+    return name
+      .split(" ")
+      .map((n) => n.charAt(0).toUpperCase() + n.slice(1).toLowerCase())
+      .join(" ");
+  };
+
   // ✅ Add new user
   const handleAddUser = async (e) => {
     e.preventDefault();
@@ -87,9 +98,11 @@ const UserManagement = ({ adminColumns, instructorColumns, traineeColumns }) => 
     try {
       const payload = {
         ...form,
+        first_name: capitalizeName(form.first_name),
+        last_name: capitalizeName(form.last_name),
         trainee_id: form.role === "trainee" ? generateTraineeId() : null,
       };
-      await axios.post("http://localhost:5000/api/users", payload);
+      await axios.post(`${API_BASE_URL}/users`, payload);
       toast.success("✅ User added successfully!");
       setShowModal(false);
       fetchUsers();
@@ -113,7 +126,7 @@ const UserManagement = ({ adminColumns, instructorColumns, traineeColumns }) => 
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this user?")) return;
     try {
-      await axios.delete(`http://localhost:5000/api/users/${id}`);
+      await axios.delete(`${API_BASE_URL}/users/${id}`);
       toast.success("🗑️ User deleted successfully!");
       fetchUsers();
     } catch (err) {
@@ -257,7 +270,6 @@ const UserManagement = ({ adminColumns, instructorColumns, traineeColumns }) => 
           </table>
         </div>
 
-        {/* ✅ Updated pagination format */}
         <div className="d-flex justify-content-between align-items-center mt-2 flex-wrap gap-2">
           <div>
             {startRow}-{endRow} of {totalRows}
@@ -374,7 +386,9 @@ const UserManagement = ({ adminColumns, instructorColumns, traineeColumns }) => 
                 <input
                   className="form-control"
                   value={form.first_name}
-                  onChange={(e) => setForm({ ...form, first_name: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, first_name: capitalizeName(e.target.value) })
+                  }
                   required
                 />
               </div>
@@ -383,7 +397,9 @@ const UserManagement = ({ adminColumns, instructorColumns, traineeColumns }) => 
                 <input
                   className="form-control"
                   value={form.last_name}
-                  onChange={(e) => setForm({ ...form, last_name: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, last_name: capitalizeName(e.target.value) })
+                  }
                   required
                 />
               </div>

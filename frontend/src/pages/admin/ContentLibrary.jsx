@@ -1,4 +1,4 @@
-// ContentLibrary.jsx
+// src/pages/admin/ContentLibrary.jsx
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import {
@@ -16,6 +16,7 @@ import autoTable from "jspdf-autotable";
 import { saveAs } from "file-saver";
 import { FaTrash } from "react-icons/fa";
 import { MdLibraryAdd } from "react-icons/md";
+import { API_BASE_URL } from "../../api"; // ✅ Centralized API import
 
 const ContentLibrary = () => {
   const [showModal, setShowModal] = useState(false);
@@ -29,10 +30,10 @@ const ContentLibrary = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Fetch instructors
+  // ✅ Fetch instructors
   const fetchInstructors = async () => {
     try {
-      const res = await axios.get("/api/users/instructors");
+      const res = await axios.get(`${API_BASE_URL}/users/instructors`);
       setInstructors(res.data);
     } catch (err) {
       console.error("Error fetching instructors:", err);
@@ -40,13 +41,15 @@ const ContentLibrary = () => {
     }
   };
 
-  // Fetch content
+  // ✅ Fetch content
   const fetchContent = async () => {
     setLoading(true);
     setError("");
     try {
-      const res = await axios.get("/api/users/contents");
-      const contents = Array.isArray(res.data) ? res.data : res.data.content || [];
+      const res = await axios.get(`${API_BASE_URL}/users/contents`);
+      const contents = Array.isArray(res.data)
+        ? res.data
+        : res.data.content || [];
       setContentList(contents);
     } catch (err) {
       console.error("Error fetching content:", err);
@@ -61,7 +64,7 @@ const ContentLibrary = () => {
     fetchContent();
   }, []);
 
-  // Add content
+  // ✅ Add content
   const handleAddContent = async (e) => {
     e.preventDefault();
     if (!title || !instructorId) {
@@ -69,7 +72,10 @@ const ContentLibrary = () => {
       return;
     }
     try {
-      await axios.post("/api/users/contents", { title, instructor_id: instructorId });
+      await axios.post(`${API_BASE_URL}/users/contents`, {
+        title,
+        instructor_id: instructorId,
+      });
       toast.success("Content added successfully");
       setShowModal(false);
       setTitle("");
@@ -82,11 +88,11 @@ const ContentLibrary = () => {
     }
   };
 
-  // Delete content
+  // ✅ Delete content
   const handleDeleteContent = async (id) => {
     if (!window.confirm("Are you sure you want to delete this content?")) return;
     try {
-      await axios.delete(`/api/users/contents/${id}`);
+      await axios.delete(`${API_BASE_URL}/users/contents/${id}`);
       toast.success("Content deleted successfully");
       fetchContent();
     } catch (err) {
@@ -95,12 +101,21 @@ const ContentLibrary = () => {
     }
   };
 
-  // Handle instructor change
+  // ✅ Handle instructor change in modal
   const handleInstructorChange = (e) => {
     const selectedId = e.target.value;
     setInstructorId(selectedId);
-    const selectedInstructor = instructors.find((i) => i.id.toString() === selectedId);
+    const selectedInstructor = instructors.find(
+      (i) => i.id.toString() === selectedId
+    );
     setInstructorEmail(selectedInstructor ? selectedInstructor.email : "");
+  };
+
+  // ✅ Helper: Get instructor email by ID (fallback if API doesn’t provide it)
+  const getInstructorEmail = (content) => {
+    if (content.instructor_email) return content.instructor_email;
+    const instructor = instructors.find((i) => i.id === content.instructor_id);
+    return instructor ? instructor.email : "N/A";
   };
 
   // Pagination
@@ -111,17 +126,19 @@ const ContentLibrary = () => {
     : [];
   const totalPages = Math.ceil(contentList.length / rowsPerPage);
 
-  const handleNext = () => currentPage < totalPages && setCurrentPage((prev) => prev + 1);
-  const handlePrev = () => currentPage > 1 && setCurrentPage((prev) => prev - 1);
+  const handleNext = () =>
+    currentPage < totalPages && setCurrentPage((prev) => prev + 1);
+  const handlePrev = () =>
+    currentPage > 1 && setCurrentPage((prev) => prev - 1);
 
-  // Export CSV
+  // ✅ Export CSV
   const exportCSV = () => {
     if (!Array.isArray(contentList) || contentList.length === 0) return;
     const header = ["Title", "Instructor Name", "Instructor Email"];
     const rows = contentList.map((c) => [
       c.title,
       `${c.first_name || ""} ${c.last_name || ""}`,
-      c.instructor_email || "",
+      getInstructorEmail(c),
     ]);
     const csvContent =
       "data:text/csv;charset=utf-8," +
@@ -130,7 +147,7 @@ const ContentLibrary = () => {
     saveAs(encodedUri, "content_library.csv");
   };
 
-  // Export PDF
+  // ✅ Export PDF
   const exportPDF = () => {
     if (!Array.isArray(contentList) || contentList.length === 0) return;
 
@@ -143,15 +160,27 @@ const ContentLibrary = () => {
       idx + 1,
       c.title,
       `${c.first_name || ""} ${c.last_name || ""}`,
-      c.instructor_email || "",
+      getInstructorEmail(c),
     ]);
 
     autoTable(doc, {
       head: [tableColumn],
       body: tableRows,
       startY: 25,
-      styles: { fontSize: 10, cellPadding: 4, lineColor: [0, 0, 0], lineWidth: 0.2, halign: "left" },
-      headStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], lineWidth: 0.3, lineColor: [0, 0, 0], fontStyle: "bold" },
+      styles: {
+        fontSize: 10,
+        cellPadding: 4,
+        lineColor: [0, 0, 0],
+        lineWidth: 0.2,
+        halign: "left",
+      },
+      headStyles: {
+        fillColor: [255, 255, 255],
+        textColor: [0, 0, 0],
+        lineWidth: 0.3,
+        lineColor: [0, 0, 0],
+        fontStyle: "bold",
+      },
       alternateRowStyles: { fillColor: [245, 245, 245] },
     });
 
@@ -166,14 +195,19 @@ const ContentLibrary = () => {
         <Button
           className="mt-2 mt-md-0 d-flex align-items-center gap-2"
           onClick={() => setShowModal(true)}
-          style={{ backgroundColor: "#006400", borderColor: "#006400", color: "#fff", fontWeight: "500" }}
+          style={{
+            backgroundColor: "#006400",
+            borderColor: "#006400",
+            color: "#fff",
+            fontWeight: "500",
+          }}
         >
           <MdLibraryAdd size={20} color="#fff" />
           Add New Content
         </Button>
       </div>
 
-      {/* Modal Form */}
+      {/* ✅ Modal Form */}
       <Modal show={showModal} onHide={() => setShowModal(false)}>
         <Modal.Header closeButton>
           <Modal.Title>Add New Content</Modal.Title>
@@ -192,7 +226,10 @@ const ContentLibrary = () => {
 
             <Form.Group className="mb-3">
               <Form.Label>Instructor</Form.Label>
-              <Form.Select value={instructorId} onChange={handleInstructorChange}>
+              <Form.Select
+                value={instructorId}
+                onChange={handleInstructorChange}
+              >
                 <option value="">Select Instructor</option>
                 {instructors.map((i) => (
                   <option key={i.id} value={i.id}>
@@ -216,21 +253,29 @@ const ContentLibrary = () => {
         </Form>
       </Modal>
 
-      {/* Export Buttons */}
+      {/* ✅ Export Buttons */}
       <div className="mb-3">
-        <Button className="me-2" onClick={exportCSV} disabled={loading || !contentList.length}>
+        <Button
+          className="me-2"
+          onClick={exportCSV}
+          disabled={loading || !contentList.length}
+        >
           Export CSV
         </Button>
         <Button
           onClick={exportPDF}
           disabled={loading || !contentList.length}
-          style={{ backgroundColor: "#006400", borderColor: "#006400", color: "#fff" }}
+          style={{
+            backgroundColor: "#006400",
+            borderColor: "#006400",
+            color: "#fff",
+          }}
         >
           Export PDF
         </Button>
       </div>
 
-      {/* Loading / Error */}
+      {/* ✅ Loading / Error / Table */}
       {loading ? (
         <div className="text-center my-5">
           <Spinner animation="border" variant="primary" />
@@ -257,9 +302,14 @@ const ContentLibrary = () => {
                       <td>{indexOfFirst + idx + 1}</td>
                       <td>{c.title}</td>
                       <td>{`${c.first_name || ""} ${c.last_name || ""}`}</td>
-                      <td>{c.instructor_email || ""}</td>
+                      {/* ✅ Always show instructor email, even if backend doesn’t return it */}
+                      <td>{getInstructorEmail(c)}</td>
                       <td>
-                        <Button variant="danger" size="sm" onClick={() => handleDeleteContent(c.id)}>
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          onClick={() => handleDeleteContent(c.id)}
+                        >
                           <FaTrash />
                         </Button>
                       </td>
@@ -277,17 +327,19 @@ const ContentLibrary = () => {
           </div>
 
           {/* Row info */}
-          <div className="mb-2">
-            {contentList.length > 0 && (
+          {contentList.length > 0 && (
+            <div className="mb-2">
               <small>
-                {indexOfFirst + 1}-{Math.min(indexOfLast, contentList.length)} of {contentList.length}
+                {indexOfFirst + 1}-
+                {Math.min(indexOfLast, contentList.length)} of{" "}
+                {contentList.length}
               </small>
-            )}
-          </div>
+            </div>
+          )}
         </>
       )}
 
-      {/* Pagination */}
+      {/* ✅ Pagination */}
       {!loading && !error && (
         <div className="d-flex justify-content-between align-items-center mt-2">
           <div>
@@ -308,9 +360,15 @@ const ContentLibrary = () => {
             </Form.Select>
           </div>
           <Pagination className="mb-0">
-            <Pagination.Prev onClick={handlePrev} disabled={currentPage === 1} />
+            <Pagination.Prev
+              onClick={handlePrev}
+              disabled={currentPage === 1}
+            />
             <Pagination.Item active>{currentPage}</Pagination.Item>
-            <Pagination.Next onClick={handleNext} disabled={currentPage === totalPages || totalPages === 0} />
+            <Pagination.Next
+              onClick={handleNext}
+              disabled={currentPage === totalPages || totalPages === 0}
+            />
           </Pagination>
         </div>
       )}

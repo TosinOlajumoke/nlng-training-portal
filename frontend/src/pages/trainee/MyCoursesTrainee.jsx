@@ -213,7 +213,7 @@ const MyCoursesTrainee = () => {
                     </>
                   )}
 
-                  {/* ✅ Materials */}
+                  {/* ✅ Materials (download immediately) */}
                   <h5>Materials:</h5>
                   {selectedModule.materials_path ? (
                     <p>
@@ -222,14 +222,14 @@ const MyCoursesTrainee = () => {
                         download
                         className="btn btn-outline-primary btn-sm"
                       >
-                        📄 Download Materials
+                        📄 Download Material
                       </a>
                     </p>
                   ) : (
                     <p className="text-muted">No materials uploaded yet.</p>
                   )}
 
-                  {/* ✅ VR Content */}
+                  {/* ✅ VR Content (open in new tab) */}
                   <h5>VR Content:</h5>
                   {selectedModule.vr_content_path ? (
                     <p>
@@ -249,20 +249,47 @@ const MyCoursesTrainee = () => {
 
                 {/* ✅ Right: Video and Image stacked */}
                 <Col md={6} sm={12}>
-                  {/* Video */}
+                  {/* ✅ Video (supports YouTube + uploaded files) */}
                   <h5>Video:</h5>
                   {selectedModule.video_url ? (
-                    <video
-                      src={selectedModule.video_url}
-                      controls
-                      style={{
-                        width: "100%",
-                        height: "250px",
-                        borderRadius: "8px",
-                        objectFit: "cover",
-                        marginBottom: "15px",
-                      }}
-                    />
+                    selectedModule.video_url.includes("youtube.com") ||
+                    selectedModule.video_url.includes("youtu.be") ? (
+                      <iframe
+                        width="100%"
+                        height="250"
+                        style={{
+                          borderRadius: "8px",
+                          marginBottom: "15px",
+                          border: "none",
+                        }}
+                        src={
+                          selectedModule.video_url.includes("watch?v=")
+                            ? selectedModule.video_url.replace(
+                                "watch?v=",
+                                "embed/"
+                              )
+                            : selectedModule.video_url.replace(
+                                "youtu.be/",
+                                "www.youtube.com/embed/"
+                              )
+                        }
+                        title={selectedModule.module_title}
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      ></iframe>
+                    ) : (
+                      <video
+                        src={buildFileURL(selectedModule.video_url)}
+                        controls
+                        style={{
+                          width: "100%",
+                          height: "250px",
+                          borderRadius: "8px",
+                          objectFit: "cover",
+                          marginBottom: "15px",
+                        }}
+                      />
+                    )
                   ) : (
                     <p className="text-muted">No video link available.</p>
                   )}

@@ -12,6 +12,7 @@ import {
   ToastContainer,
 } from "react-bootstrap";
 import { useAuth } from "../../context/AuthContext";
+import { API_BASE_URL } from "../../api"; // ✅ Import your centralized API URL
 
 const MyCoursesInstructor = () => {
   const { user } = useAuth();
@@ -46,10 +47,11 @@ const MyCoursesInstructor = () => {
           return;
         }
 
-        const res = await axios.get(`/api/users/instructor/${user.id}/contents`);
+        // ✅ Use the centralized API_BASE_URL
+        const res = await axios.get(`${API_BASE_URL}/users/instructor/${user.id}/contents`);
         setCourses(res.data);
 
-        const tRes = await axios.get("/api/users/trainees");
+        const tRes = await axios.get(`${API_BASE_URL}/users/trainees`);
         setTraineesList(tRes.data);
       } catch (err) {
         console.error(err);
@@ -109,7 +111,8 @@ const MyCoursesInstructor = () => {
       formData.append("vr_content", moduleVRFile);
       formData.append("trainee_ids", JSON.stringify(selectedTrainees));
 
-      await axios.post("/api/users/modules/create", formData, {
+      // ✅ Use API_BASE_URL for POST
+      await axios.post(`${API_BASE_URL}/users/modules/create`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 

@@ -24,11 +24,11 @@ CREATE TABLE IF NOT EXISTS contents (
 CREATE TABLE IF NOT EXISTS modules (
   id SERIAL PRIMARY KEY,
   content_id INTEGER REFERENCES contents(id) ON DELETE CASCADE,
-  title VARCHAR(255) NOT NULL,
+  title VARCHAR(100) NOT NULL,
   description TEXT,
-  meta_description VARCHAR(255),
+  meta_description VARCHAR(5000),
   image_path TEXT,
-  video_url VARCHAR(500),
+  video_url VARCHAR(5000),
   materials_path TEXT,
   vr_content_path TEXT,
   created_at TIMESTAMP DEFAULT NOW()

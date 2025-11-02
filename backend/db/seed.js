@@ -2,6 +2,8 @@ import bcrypt from "bcrypt";
 import { pool } from "../config/db.js";
 
 async function seed() {
+  console.log("✅ Connected to PostgreSQL");
+
   const users = [
     {
       first_name: "IT",
@@ -14,6 +16,7 @@ async function seed() {
       first_name: "Ian",
       last_name: "Instructor",
       email: "instructor@lms.test",
+      title: "Dr.",
       password: "teach123",
       role: "instructor",
     },
@@ -31,10 +34,18 @@ async function seed() {
     const hashed = await bcrypt.hash(u.password, 10);
     try {
       await pool.query(
-        `INSERT INTO users (first_name, last_name, email, password_hash, role, trainee_id)
-         VALUES ($1,$2,$3,$4,$5,$6)
+        `INSERT INTO users (first_name, last_name, email, password_hash, title, role, trainee_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
          ON CONFLICT (email) DO NOTHING`,
-        [u.first_name, u.last_name, u.email, hashed, u.role, u.trainee_id || null]
+        [
+          u.first_name,
+          u.last_name,
+          u.email,
+          hashed,
+          u.title || null,
+          u.role,
+          u.trainee_id || null,
+        ]
       );
       console.log("✅ Seeded:", u.email);
     } catch (err) {

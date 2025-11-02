@@ -5,6 +5,7 @@ import { Table, Spinner, Alert, Button, Dropdown } from "react-bootstrap";
 import { useAuth } from "../../context/AuthContext";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
+import { API_BASE_URL } from "../../api"; // ✅ Import centralized API URL
 
 const EnrollTraineeInstructor = () => {
   const { user } = useAuth();
@@ -25,7 +26,8 @@ const EnrollTraineeInstructor = () => {
           return;
         }
 
-        const resCourses = await axios.get(`/api/users/instructor/${user.id}/contents`);
+        // ✅ Use API_BASE_URL for consistency
+        const resCourses = await axios.get(`${API_BASE_URL}/users/instructor/${user.id}/contents`);
         setCourses(resCourses.data);
 
         const pageData = {};
@@ -35,7 +37,7 @@ const EnrollTraineeInstructor = () => {
         const modulesData = {};
         await Promise.all(
           resCourses.data.map(async (c) => {
-            const resModules = await axios.get(`/api/users/modules/content/${c.content_id}`);
+            const resModules = await axios.get(`${API_BASE_URL}/users/modules/content/${c.content_id}`);
             modulesData[c.content_id] = resModules.data.modules || [];
           })
         );
@@ -130,7 +132,15 @@ const EnrollTraineeInstructor = () => {
             ]);
           });
         } else {
-          rows.push([idx + 1, module.module_title, module.description, module.meta_description, module.video_url, "-", "-"]);
+          rows.push([
+            idx + 1,
+            module.module_title,
+            module.description,
+            module.meta_description,
+            module.video_url,
+            "-",
+            "-",
+          ]);
         }
       });
     }
@@ -143,7 +153,11 @@ const EnrollTraineeInstructor = () => {
     const rows = prepareExportRows(modules);
 
     if (type === "pdf") {
-      exportTablePDF(`${course.content_title} - All Modules`, rows, `${course.content_title}-AllModules`);
+      exportTablePDF(
+        `${course.content_title} - All Modules`,
+        rows,
+        `${course.content_title}-AllModules`
+      );
     } else {
       const headers = ["#", "Module", "Description", "Meta", "Video", "Trainee Name", "Trainee ID"];
       exportTableCSV(headers, rows, `${course.content_title}-AllModules`);
@@ -193,7 +207,11 @@ const EnrollTraineeInstructor = () => {
             const currentRows = modules.slice(startIndex, startIndex + rowsPerPage);
 
             return (
-              <div key={course.content_id} className="mb-4" ref={(el) => (tableRefs.current[course.content_id] = el)}>
+              <div
+                key={course.content_id}
+                className="mb-4"
+                ref={(el) => (tableRefs.current[course.content_id] = el)}
+              >
                 <h4>{course.content_title}</h4>
                 <div style={{ overflowX: "auto" }}>
                   <Table striped bordered hover responsive>
@@ -222,11 +240,21 @@ const EnrollTraineeInstructor = () => {
                                 <tr key={`${m.module_id}-${t.trainee_id}`}>
                                   {tIdx === 0 && (
                                     <>
-                                      <td rowSpan={m.enrolled_trainees.length}>{startIndex + idx + 1}</td>
-                                      <td rowSpan={m.enrolled_trainees.length}>{m.module_title}</td>
-                                      <td rowSpan={m.enrolled_trainees.length}>{m.description}</td>
-                                      <td rowSpan={m.enrolled_trainees.length}>{m.meta_description}</td>
-                                      <td rowSpan={m.enrolled_trainees.length}>{m.video_url}</td>
+                                      <td rowSpan={m.enrolled_trainees.length}>
+                                        {startIndex + idx + 1}
+                                      </td>
+                                      <td rowSpan={m.enrolled_trainees.length}>
+                                        {m.module_title}
+                                      </td>
+                                      <td rowSpan={m.enrolled_trainees.length}>
+                                        {m.description}
+                                      </td>
+                                      <td rowSpan={m.enrolled_trainees.length}>
+                                        {m.meta_description}
+                                      </td>
+                                      <td rowSpan={m.enrolled_trainees.length}>
+                                        {m.video_url}
+                                      </td>
                                     </>
                                   )}
                                   <td>
@@ -254,7 +282,8 @@ const EnrollTraineeInstructor = () => {
 
                 <div className="d-flex justify-content-between align-items-center mt-2">
                   <div>
-                    Page {pageNum} of {totalPages} | Showing {startIndex + 1}-{Math.min(startIndex + rowsPerPage, modules.length)} of {modules.length}
+                    Page {pageNum} of {totalPages} | Showing {startIndex + 1}-
+                    {Math.min(startIndex + rowsPerPage, modules.length)} of {modules.length}
                   </div>
                   <div>
                     <Button
