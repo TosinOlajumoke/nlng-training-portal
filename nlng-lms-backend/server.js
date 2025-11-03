@@ -2,12 +2,10 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import pkg from "pg";
 import path from "path";
 import authRoutes from "./routes/authRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
-
-const { Pool } = pkg;
+import { pool } from "./config/db.js"; // <- use the single pool from config
 
 // ====================================================
 // 🔧 Load environment variables
@@ -21,24 +19,11 @@ const app = express();
 const port = process.env.PORT || 5000;
 
 // ====================================================
-// 🗄️ PostgreSQL Connection
-// ====================================================
-export const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false,
-});
-
-pool
-  .connect()
-  .then(() => console.log("✅ Connected to PostgreSQL database"))
-  .catch((err) => console.error("❌ Database connection error:", err.message));
-
-// ====================================================
 // 🧩 Middleware Setup
 // ====================================================
 const allowedOrigins = [
   "http://localhost:5173", // React dev server
-  process.env.FRONTEND_URL, // Production frontend
+  process.env.FRONTEND_URL, // Production frontend (if set)
 ].filter(Boolean);
 
 app.use(
@@ -75,7 +60,6 @@ app.use((req, res, next) => {
 // Serve uploads folder statically
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
-
 // ====================================================
 // 🔐 API Routes
 // ====================================================
@@ -83,10 +67,16 @@ app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 
 // ====================================================
-// 🌟 Base Route
+// 🌟 Base Route — optionally verify DB ping
 // ====================================================
-app.get("/", (req, res) => {
-  res.send("✅ NLNG LMS Backend Server is Running 🚀");
+app.get("/", async (req, res) => {
+  try {
+    const result = await pool.query("SELECT NOW()");
+    res.send(`✅ NLNG LMS Backend Server is Running 🚀 — DB Time: ${result.rows[0].now}`);
+  } catch (error) {
+    console.error("❌ Database connection error on GET / :", error.message);
+    res.status(500).send("Database error");
+  }
 });
 
 // ====================================================
