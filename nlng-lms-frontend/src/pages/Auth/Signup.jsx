@@ -5,7 +5,7 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import NavbarCommon from "../../components/NavbarCommon";
 import logo from "../../assets/navbar.png";
-import { API_BASE_URL } from "../api"; // ✅ centralized import
+import { API_BASE_URL } from "../../api"; // ✅ centralized import
 
 export default function Signup() {
   const navigate = useNavigate();

@@ -6,7 +6,7 @@ import "react-toastify/dist/ReactToastify.css";
 import NavbarCommon from "../../components/NavbarCommon";
 import logo from "../../assets/navbar.png";
 import { useAuth } from "../../context/AuthContext";
-import { API_BASE_URL } from "../api"; // ✅ centralized API base import
+import { API_BASE_URL } from "../../api"; // ✅ centralized import
 
 export default function Login() {
   const navigate = useNavigate();
