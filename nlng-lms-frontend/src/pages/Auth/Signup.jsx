@@ -54,7 +54,7 @@ export default function Signup() {
       };
 
       // ✅ Use API_BASE_URL
-      await axios.post(`${API_BASE_URL}/api/auth/signup`, payload);
+      await axios.post(`${API_BASE_URL}/auth/signup`, payload);
 
       toast.success("✅ Registration successful! You can now login.");
       setTimeout(() => navigate("/login"), 1500);
