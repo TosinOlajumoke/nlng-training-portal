@@ -5,6 +5,7 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import NavbarCommon from "../../components/NavbarCommon";
 import logo from "../../assets/navbar.png";
+import { API_BASE_URL } from "../api"; // ✅ centralized import
 
 export default function Signup() {
   const navigate = useNavigate();
@@ -42,7 +43,6 @@ export default function Signup() {
     if (role === "trainee") traineeId = generateTraineeId();
 
     try {
-      // ✅ Capitalize names before sending
       const payload = {
         email,
         password,
@@ -53,7 +53,9 @@ export default function Signup() {
         trainee_id: traineeId,
       };
 
-      await axios.post("http://localhost:5000/api/auth/signup", payload);
+      // ✅ Use API_BASE_URL
+      await axios.post(`${API_BASE_URL}/api/auth/signup`, payload);
+
       toast.success("✅ Registration successful! You can now login.");
       setTimeout(() => navigate("/login"), 1500);
     } catch (err) {

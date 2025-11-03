@@ -5,11 +5,12 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import NavbarCommon from "../../components/NavbarCommon";
 import logo from "../../assets/navbar.png";
-import { useAuth } from "../../context/AuthContext"; // ✅ import AuthContext
+import { useAuth } from "../../context/AuthContext";
+import { API_BASE_URL } from "../api"; // ✅ centralized API base import
 
 export default function Login() {
   const navigate = useNavigate();
-  const { login } = useAuth(); // ✅ get login function from context
+  const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [show, setShow] = useState(false);
@@ -20,19 +21,20 @@ export default function Login() {
     setLoading(true);
 
     try {
-      const res = await axios.post("http://localhost:5000/api/auth/login", {
+      // ✅ Use the imported API_BASE_URL dynamically
+      const res = await axios.post(`${API_BASE_URL}/auth/login`, {
         email,
         password,
       });
 
       const userData = res.data.user;
 
-      // ✅ Save user via context (also persists to localStorage)
-      login(userData, "dummy_token"); // placeholder token for now
+      // ✅ Save user via context (persists to localStorage)
+      login(userData, "dummy_token"); // placeholder token until real JWT is added
 
       toast.success("✅ Login successful!");
 
-      // ✅ Redirect based on role
+      // ✅ Redirect based on user role
       setTimeout(() => {
         if (userData.role === "admin") navigate("/admin");
         else if (userData.role === "instructor") navigate("/instructor");
@@ -40,7 +42,7 @@ export default function Login() {
         else navigate("/unauthorized");
       }, 1000);
     } catch (err) {
-      console.error(err);
+      console.error("Login error:", err);
       toast.error(err.response?.data?.error || "❌ Invalid credentials!");
     } finally {
       setLoading(false);
@@ -93,7 +95,7 @@ export default function Login() {
               </div>
             </div>
 
-            {/* Button */}
+            {/* Submit Button */}
             <button
               className="btn w-100 mt-3 auth-btn"
               type="submit"
