@@ -712,3 +712,33 @@ body {
   }
  }
     
+/* INSTRUCTOR MODULE CONTENT */
+.module-card {
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.module-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(0, 128, 128, 0.3);
+}
+
+.content-item {
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.content-item:hover {
+  background-color: rgba(0, 128, 128, 0.2);
+}
+
+.green-btn {
+  transition: all 0.2s ease;
+}
+
+.green-btn:hover {
+  background-color: #004d00 !important;
+  border-color: #003300 !important;
+}
+
+/* Enrolled Trainee Table */
