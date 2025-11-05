@@ -18,8 +18,9 @@ import ContentLibrary from "./pages/admin/ContentLibrary";
 import AdminReports from "./pages/admin/ReportsPage";
 
 // 🎓 Instructor pages
-import InstructorDashboardHome from "./pages/instructor/DashboardHomeInstructor"
-import MyCoursesInstructor from "./pages/instructor/MyCoursesInstructor";
+import InstructorDashboardHome from "./pages/instructor/DashboardHomeInstructor";
+import ContentLibraryInst from "./pages/instructor/ContentLibraryInst";
+import MyModulesInstructor from "./pages/instructor/MyModulesInstructor";
 import InstructorTrainee from "./pages/instructor/EnrollTrainee";
 import InstructorSummary from "./pages/instructor/ProgressSummaryInstructor";
 
@@ -82,7 +83,8 @@ export default function App() {
           }>
           <Route index element={<InstructorDashboardHome />} />
          <Route path="dashboard" element={<InstructorDashboardHome />} />
-        <Route path="my-courses" element={<MyCoursesInstructor />} />
+          <Route path="content-library" element={<ContentLibraryInst />} />
+         <Route path="my-modules" element={<MyModulesInstructor />} />
         <Route path="enroll-trainee" element={<InstructorTrainee />} />
         <Route path="progress-summary" element={<InstructorSummary />} />
         </Route>

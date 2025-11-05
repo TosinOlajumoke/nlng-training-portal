@@ -7,8 +7,11 @@ import {
   FaUserPlus,
   FaBookOpen,
   FaChartLine,
+  FaBook,
   FaChalkboardTeacher,
 } from "react-icons/fa";
+
+
 
 const InstructorLayout = () => {
   const menuItems = [
@@ -17,10 +20,15 @@ const InstructorLayout = () => {
       path: "/instructor",
       icon: <FaTachometerAlt />,
     },
-     {
+    {
       label: "Content Library",
-      path: "/instructor/my-courses",
+      path: "/instructor/content-library",
       icon: <FaBookOpen />,
+    },
+     {
+      label: "My Modules",
+      path: "/instructor/my-modules",
+      icon: <FaBook />,
     },
     {
       label: "Enrolled Trainee",

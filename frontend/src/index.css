@@ -658,3 +658,57 @@ body {
     height: auto;
   }
 }
+
+
+/*admin/ContentLibrary.css  */
+.content-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.content-tile {
+  position: relative;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  transition: transform 0.2s ease-in-out;
+}
+
+.content-tile:hover {
+  transform: scale(1.02);
+}
+
+.content-tile img {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+}
+
+.content-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 1rem;
+}
+
+.delete-btn {
+  border: none;
+  background: transparent;
+  color: red;
+  cursor: pointer;
+}
+ .modal-dialog.custom-modal-width {
+  max-width: 80% !important;
+  }
+ .content-overview > div {
+          width: 50%;
+        }
+@media (max-width: 768px) {
+  .content-overview > div {
+    width: 100%;
+  }
+ }
+    

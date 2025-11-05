@@ -1,377 +1,251 @@
-// src/pages/admin/ContentLibrary.jsx
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import {
-  Button,
-  Modal,
-  Form,
-  Table,
-  Pagination,
-  Spinner,
-} from "react-bootstrap";
-import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
-import { jsPDF } from "jspdf";
-import autoTable from "jspdf-autotable";
-import { saveAs } from "file-saver";
+import { Button, Modal, Form } from "react-bootstrap";
 import { FaTrash } from "react-icons/fa";
 import { MdLibraryAdd } from "react-icons/md";
-import { API_BASE_URL } from "../../api"; // ✅ Centralized API import
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import { API_BASE_URL } from "../../api";
 
-const ContentLibrary = () => {
+const SERVER_BASE_URL = API_BASE_URL.replace(/\/api$/, "");
+
+const ContentLibrary = ({ isAdmin = true }) => {
   const [showModal, setShowModal] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
   const [title, setTitle] = useState("");
-  const [instructorId, setInstructorId] = useState("");
-  const [instructors, setInstructors] = useState([]);
-  const [instructorEmail, setInstructorEmail] = useState("");
-  const [contentList, setContentList] = useState([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(5);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-
-  // ✅ Fetch instructors
-  const fetchInstructors = async () => {
-    try {
-      const res = await axios.get(`${API_BASE_URL}/users/instructors`);
-      setInstructors(res.data);
-    } catch (err) {
-      console.error("Error fetching instructors:", err);
-      toast.error("Failed to load instructors");
-    }
-  };
-
-  // ✅ Fetch content
-  const fetchContent = async () => {
-    setLoading(true);
-    setError("");
-    try {
-      const res = await axios.get(`${API_BASE_URL}/users/contents`);
-      const contents = Array.isArray(res.data)
-        ? res.data
-        : res.data.content || [];
-      setContentList(contents);
-    } catch (err) {
-      console.error("Error fetching content:", err);
-      setError("Failed to fetch content. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [description, setDescription] = useState("");
+  const [image, setImage] = useState(null);
+  const [contents, setContents] = useState([]);
+  const [selectedContent, setSelectedContent] = useState(null);
 
   useEffect(() => {
-    fetchInstructors();
-    fetchContent();
+    fetchContents();
   }, []);
 
-  // ✅ Add content
+  const fetchContents = async () => {
+    try {
+      const res = await axios.get(`${API_BASE_URL}/users/admin_contents`);
+      setContents(res.data);
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to load content");
+    }
+  };
+
   const handleAddContent = async (e) => {
     e.preventDefault();
-    if (!title || !instructorId) {
-      toast.error("Please fill in all fields");
+    if (!title || !description || !image) {
+      toast.error("All fields are required");
       return;
     }
+
+    const formData = new FormData();
+    formData.append("title", title);
+    formData.append("description", description);
+    formData.append("image", image);
+
     try {
-      await axios.post(`${API_BASE_URL}/users/contents`, {
-        title,
-        instructor_id: instructorId,
+      await axios.post(`${API_BASE_URL}/users/admin_contents`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
       });
       toast.success("Content added successfully");
       setShowModal(false);
       setTitle("");
-      setInstructorId("");
-      setInstructorEmail("");
-      fetchContent();
+      setDescription("");
+      setImage(null);
+      fetchContents();
     } catch (err) {
-      console.error("Error adding content:", err);
+      console.error(err);
       toast.error("Failed to add content");
     }
   };
 
-  // ✅ Delete content
-  const handleDeleteContent = async (id) => {
+  const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this content?")) return;
     try {
-      await axios.delete(`${API_BASE_URL}/users/contents/${id}`);
-      toast.success("Content deleted successfully");
-      fetchContent();
+      await axios.delete(`${API_BASE_URL}/users/admin_contents/${id}`);
+      toast.success("Deleted successfully");
+      fetchContents();
     } catch (err) {
-      console.error("Error deleting content:", err);
+      console.error(err);
       toast.error("Failed to delete content");
     }
   };
 
-  // ✅ Handle instructor change in modal
-  const handleInstructorChange = (e) => {
-    const selectedId = e.target.value;
-    setInstructorId(selectedId);
-    const selectedInstructor = instructors.find(
-      (i) => i.id.toString() === selectedId
-    );
-    setInstructorEmail(selectedInstructor ? selectedInstructor.email : "");
+  const getImageUrl = (imagePath) => {
+    if (!imagePath) return "";
+    const cleanPath = imagePath
+      .replace(/^backend[\\/]/, "")
+      .replace(/^\/?uploads/, "uploads");
+    return `${SERVER_BASE_URL}/${cleanPath}`;
   };
 
-  // ✅ Helper: Get instructor email by ID (fallback if API doesn’t provide it)
-  const getInstructorEmail = (content) => {
-    if (content.instructor_email) return content.instructor_email;
-    const instructor = instructors.find((i) => i.id === content.instructor_id);
-    return instructor ? instructor.email : "N/A";
-  };
-
-  // Pagination
-  const indexOfLast = currentPage * rowsPerPage;
-  const indexOfFirst = indexOfLast - rowsPerPage;
-  const currentContents = Array.isArray(contentList)
-    ? contentList.slice(indexOfFirst, indexOfLast)
-    : [];
-  const totalPages = Math.ceil(contentList.length / rowsPerPage);
-
-  const handleNext = () =>
-    currentPage < totalPages && setCurrentPage((prev) => prev + 1);
-  const handlePrev = () =>
-    currentPage > 1 && setCurrentPage((prev) => prev - 1);
-
-  // ✅ Export CSV
-  const exportCSV = () => {
-    if (!Array.isArray(contentList) || contentList.length === 0) return;
-    const header = ["Title", "Instructor Name", "Instructor Email"];
-    const rows = contentList.map((c) => [
-      c.title,
-      `${c.first_name || ""} ${c.last_name || ""}`,
-      getInstructorEmail(c),
-    ]);
-    const csvContent =
-      "data:text/csv;charset=utf-8," +
-      [header, ...rows].map((e) => e.join(",")).join("\n");
-    const encodedUri = encodeURI(csvContent);
-    saveAs(encodedUri, "content_library.csv");
-  };
-
-  // ✅ Export PDF
-  const exportPDF = () => {
-    if (!Array.isArray(contentList) || contentList.length === 0) return;
-
-    const doc = new jsPDF();
-    doc.setFontSize(14);
-    doc.text("Content Library", 14, 15);
-
-    const tableColumn = ["#", "Title", "Instructor Name", "Instructor Email"];
-    const tableRows = contentList.map((c, idx) => [
-      idx + 1,
-      c.title,
-      `${c.first_name || ""} ${c.last_name || ""}`,
-      getInstructorEmail(c),
-    ]);
-
-    autoTable(doc, {
-      head: [tableColumn],
-      body: tableRows,
-      startY: 25,
-      styles: {
-        fontSize: 10,
-        cellPadding: 4,
-        lineColor: [0, 0, 0],
-        lineWidth: 0.2,
-        halign: "left",
-      },
-      headStyles: {
-        fillColor: [255, 255, 255],
-        textColor: [0, 0, 0],
-        lineWidth: 0.3,
-        lineColor: [0, 0, 0],
-        fontStyle: "bold",
-      },
-      alternateRowStyles: { fillColor: [245, 245, 245] },
-    });
-
-    doc.save("content_library.pdf");
+  const openViewModal = (content) => {
+    setSelectedContent(content);
+    setShowViewModal(true);
   };
 
   return (
-    <div className="page-content">
+    <div className="page-content content-library container py-4">
       <ToastContainer />
-      <div className="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-3">
+      <div className="d-flex justify-content-between align-items-center mb-4">
         <h2>Content Library</h2>
-        <Button
-          className="mt-2 mt-md-0 d-flex align-items-center gap-2"
-          onClick={() => setShowModal(true)}
-          style={{
-            backgroundColor: "#006400",
-            borderColor: "#006400",
-            color: "#fff",
-            fontWeight: "500",
-          }}
-        >
-          <MdLibraryAdd size={20} color="#fff" />
-          Add New Content
-        </Button>
+        {isAdmin && (
+          <Button
+            onClick={() => setShowModal(true)}
+            className="d-flex align-items-center gap-2"
+            style={{ backgroundColor: "#006400", borderColor: "#006400" }}
+          >
+            <MdLibraryAdd size={20} /> Add New Content
+          </Button>
+        )}
       </div>
 
-      {/* ✅ Modal Form */}
-      <Modal show={showModal} onHide={() => setShowModal(false)}>
-        <Modal.Header closeButton>
-          <Modal.Title>Add New Content</Modal.Title>
-        </Modal.Header>
-        <Form onSubmit={handleAddContent}>
-          <Modal.Body>
-            <Form.Group className="mb-3">
-              <Form.Label>Title</Form.Label>
-              <Form.Control
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Enter content title"
-              />
-            </Form.Group>
-
-            <Form.Group className="mb-3">
-              <Form.Label>Instructor</Form.Label>
-              <Form.Select
-                value={instructorId}
-                onChange={handleInstructorChange}
+      {/* ✅ Content Grid */}
+      <div className="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-4">
+        {contents.length > 0 ? (
+          contents.map((item) => (
+            <div className="col" key={item.id}>
+              <div
+                className="card h-100 shadow-sm"
+                onClick={() => openViewModal(item)}
+                style={{ cursor: "pointer" }}
               >
-                <option value="">Select Instructor</option>
-                {instructors.map((i) => (
-                  <option key={i.id} value={i.id}>
-                    {i.first_name} {i.last_name}
-                  </option>
-                ))}
-              </Form.Select>
-            </Form.Group>
+                <img
+                  src={getImageUrl(item.image)}
+                  alt={item.title}
+                  className="card-img-top"
+                  style={{ height: "200px", objectFit: "cover" }}
+                />
+                <div className="card-body position-relative">
+                  <h5 className="card-title">{item.title}</h5>
 
-            <Form.Group className="mb-3">
-              <Form.Label>Instructor Email</Form.Label>
-              <Form.Control type="email" value={instructorEmail} readOnly />
-            </Form.Group>
-          </Modal.Body>
-          <Modal.Footer>
-            <Button variant="secondary" onClick={() => setShowModal(false)}>
-              Cancel
-            </Button>
-            <Button type="submit">Add Content</Button>
-          </Modal.Footer>
-        </Form>
-      </Modal>
-
-      {/* ✅ Export Buttons */}
-      <div className="mb-3">
-        <Button
-          className="me-2"
-          onClick={exportCSV}
-          disabled={loading || !contentList.length}
-        >
-          Export CSV
-        </Button>
-        <Button
-          onClick={exportPDF}
-          disabled={loading || !contentList.length}
-          style={{
-            backgroundColor: "#006400",
-            borderColor: "#006400",
-            color: "#fff",
-          }}
-        >
-          Export PDF
-        </Button>
+                  {/* Only admins see delete button */}
+                  {isAdmin && (
+                    <button
+                      className="btn btn-sm btn-danger position-absolute top-0 end-0 m-2"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(item.id);
+                      }}
+                    >
+                      <FaTrash />
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))
+        ) : (
+          <p className="text-center text-muted">No content available</p>
+        )}
       </div>
 
-      {/* ✅ Loading / Error / Table */}
-      {loading ? (
-        <div className="text-center my-5">
-          <Spinner animation="border" variant="primary" />
-        </div>
-      ) : error ? (
-        <div className="text-center text-danger my-3">{error}</div>
-      ) : (
-        <>
-          <div style={{ overflowX: "auto" }}>
-            <Table striped bordered hover responsive>
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Course Title</th>
-                  <th>Instructor Name</th>
-                  <th>Instructor Email</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {currentContents.length > 0 ? (
-                  currentContents.map((c, idx) => (
-                    <tr key={c.id}>
-                      <td>{indexOfFirst + idx + 1}</td>
-                      <td>{c.title}</td>
-                      <td>{`${c.first_name || ""} ${c.last_name || ""}`}</td>
-                      {/* ✅ Always show instructor email, even if backend doesn’t return it */}
-                      <td>{getInstructorEmail(c)}</td>
-                      <td>
-                        <Button
-                          variant="danger"
-                          size="sm"
-                          onClick={() => handleDeleteContent(c.id)}
-                        >
-                          <FaTrash />
-                        </Button>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="5" className="text-center">
-                      No content available
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </Table>
-          </div>
+      {/* ✅ Add Modal (Admin only) */}
+      {isAdmin && (
+        <Modal show={showModal} onHide={() => setShowModal(false)}>
+          <Modal.Header closeButton>
+            <Modal.Title>Add New Content</Modal.Title>
+          </Modal.Header>
+          <Form onSubmit={handleAddContent}>
+            <Modal.Body>
+              <Form.Group className="mb-3">
+                <Form.Label>Title</Form.Label>
+                <Form.Control
+                  type="text"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                />
+              </Form.Group>
 
-          {/* Row info */}
-          {contentList.length > 0 && (
-            <div className="mb-2">
-              <small>
-                {indexOfFirst + 1}-
-                {Math.min(indexOfLast, contentList.length)} of{" "}
-                {contentList.length}
-              </small>
-            </div>
+              <Form.Group className="mb-3">
+                <Form.Label>Description</Form.Label>
+                <Form.Control
+                  as="textarea"
+                  rows={3}
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                />
+              </Form.Group>
+
+              <Form.Group className="mb-3">
+                <Form.Label>Image</Form.Label>
+                <Form.Control
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setImage(e.target.files[0])}
+                />
+              </Form.Group>
+
+              {image && (
+                <div className="text-center mb-3">
+                  <img
+                    src={URL.createObjectURL(image)}
+                    alt="Preview"
+                    className="img-fluid rounded"
+                    style={{ maxHeight: "200px", objectFit: "cover" }}
+                  />
+                </div>
+              )}
+            </Modal.Body>
+            <Modal.Footer>
+              <Button variant="secondary" onClick={() => setShowModal(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" style={{ backgroundColor: "#006400" }}>
+                Save
+              </Button>
+            </Modal.Footer>
+          </Form>
+        </Modal>
+      )}
+
+      {/* ✅ View Modal */}
+      <Modal
+        show={showViewModal}
+        onHide={() => setShowViewModal(false)}
+        size="xl"
+        centered
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>{selectedContent?.title}</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {selectedContent && (
+            <>
+              <h4
+                className="mb-4 fw-bold"
+                style={{ color: "#006400", paddingBottom: "6px" }}
+              >
+                Overview
+              </h4>
+              <div className="content-overview d-flex flex-column flex-md-row align-items-start gap-4">
+                <div className="order-1 order-md-2 flex-fill text-center">
+                  <img
+                    src={getImageUrl(selectedContent.image)}
+                    alt={selectedContent.title}
+                    className="img-fluid rounded"
+                    style={{
+                      width: "100%",
+                      maxHeight: "400px",
+                      objectFit: "cover",
+                      borderRadius: "10px",
+                    }}
+                  />
+                </div>
+                <div className="order-2 order-md-1 flex-fill">
+                  <p style={{ lineHeight: "1.6" }}>
+                    {selectedContent.description}
+                  </p>
+                </div>
+              </div>
+            </>
           )}
-        </>
-      )}
-
-      {/* ✅ Pagination */}
-      {!loading && !error && (
-        <div className="d-flex justify-content-between align-items-center mt-2">
-          <div>
-            <span>Rows per page: </span>
-            <Form.Select
-              style={{ width: "auto", display: "inline-block" }}
-              value={rowsPerPage}
-              onChange={(e) => {
-                setRowsPerPage(parseInt(e.target.value));
-                setCurrentPage(1);
-              }}
-            >
-              {[5, 10, 15].map((n) => (
-                <option key={n} value={n}>
-                  {n}
-                </option>
-              ))}
-            </Form.Select>
-          </div>
-          <Pagination className="mb-0">
-            <Pagination.Prev
-              onClick={handlePrev}
-              disabled={currentPage === 1}
-            />
-            <Pagination.Item active>{currentPage}</Pagination.Item>
-            <Pagination.Next
-              onClick={handleNext}
-              disabled={currentPage === totalPages || totalPages === 0}
-            />
-          </Pagination>
-        </div>
-      )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button onClick={() => setShowViewModal(false)}>Close</Button>
+        </Modal.Footer>
+      </Modal>
     </div>
   );
 };
