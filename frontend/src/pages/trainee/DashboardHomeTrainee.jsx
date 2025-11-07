@@ -1,8 +1,11 @@
 // pages/trainee/DashboardHomeTrainee.jsx
 import React from "react";
 import DashboardReusable from "../../components/DashboardReusable";
+import { useAuth } from "../../context/AuthContext";
 
 const DashboardHomeTrainee = () => {
+  const { user } = useAuth();
+
   const traineeCardsConfig = [
     { label: "Trainee ID", key: "trainee_id" },
     { label: "Courses Enrolled", key: "total_courses_enrolled" },

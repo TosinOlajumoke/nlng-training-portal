@@ -1,366 +1,115 @@
-// src/pages/trainee/MyCoursesTrainee.jsx
 import React, { useEffect, useState } from "react";
-import axios from "axios";
-import {
-  Table,
-  Spinner,
-  Alert,
-  Button,
-  Modal,
-  Row,
-  Col,
-  Image,
-  Badge,
-} from "react-bootstrap";
 import { useAuth } from "../../context/AuthContext";
-import { API_BASE_URL } from "../../api";
 
 const MyCoursesTrainee = () => {
-  const { user } = useAuth();
-  const [enrollments, setEnrollments] = useState([]);
+  const { user, token } = useAuth();
+  const [modules, setModules] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  const [showModal, setShowModal] = useState(false);
-  const [selectedModule, setSelectedModule] = useState(null);
-  const [currentCourseModules, setCurrentCourseModules] = useState([]);
-  const [currentModuleIndex, setCurrentModuleIndex] = useState(0);
-
-  const [progressMap, setProgressMap] = useState({});
-
-  // ✅ Build full URL for uploaded files
-  const buildFileURL = (path) => {
-    if (!path) return null;
-    if (path.startsWith("http")) return path;
-    return `${API_BASE_URL.replace("/api", "")}${
-      path.startsWith("/") ? path : `/${path}`
-    }`;
-  };
+  const [selectedContent, setSelectedContent] = useState(null);
 
   useEffect(() => {
-    const fetchEnrollmentsAndProgress = async () => {
-      if (!user || user.role !== "trainee") {
-        setError("Access denied. Only trainees can view this page.");
-        setLoading(false);
-        return;
-      }
-
+    const fetchModules = async () => {
+      if (!user?.id) return; // Wait for user to be loaded
       try {
-        const [enrollRes, progressRes] = await Promise.all([
-          axios.get(`${API_BASE_URL}/users/trainee/${user.id}/enrollments`),
-          axios.get(`${API_BASE_URL}/users/progress/${user.id}`),
-        ]);
-
-        setEnrollments(enrollRes.data);
-        setProgressMap(progressRes.data || {});
+        const res = await fetch(`/api/trainee/my-courses/${user.id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) throw new Error("Failed to fetch trainee courses");
+        const data = await res.json();
+        setModules(data);
       } catch (err) {
-        console.error("Error fetching data:", err);
-        setError("Failed to fetch your data. Please try again.");
+        console.error("Error fetching trainee courses:", err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchEnrollmentsAndProgress();
-  }, [user]);
+    fetchModules();
+  }, [user, token]);
 
-  // Group enrollments by course
-  const coursesMap = {};
-  enrollments.forEach((enroll) => {
-    if (!coursesMap[enroll.course_id]) {
-      coursesMap[enroll.course_id] = {
-        course_title: enroll.course_title,
-        modules: [],
-      };
-    }
-    coursesMap[enroll.course_id].modules.push(enroll);
-  });
-
-  const openModal = (module, modulesArray) => {
-    setCurrentCourseModules(modulesArray);
-    const index = modulesArray.findIndex((m) => m.module_id === module.module_id);
-    setCurrentModuleIndex(index);
-    setSelectedModule(module);
-    setShowModal(true);
-  };
-
-  const closeModal = () => {
-    setSelectedModule(null);
-    setShowModal(false);
-    setCurrentCourseModules([]);
-    setCurrentModuleIndex(0);
-  };
-
-  const goToModule = (direction) => {
-    let newIndex = currentModuleIndex + direction;
-    if (newIndex < 0 || newIndex >= currentCourseModules.length) return;
-    setCurrentModuleIndex(newIndex);
-    setSelectedModule(currentCourseModules[newIndex]);
-  };
-
-  const markCompleted = async () => {
-    if (!selectedModule) return;
-    try {
-      await axios.post(`${API_BASE_URL}/users/progress`, {
-        traineeId: user.id,
-        moduleId: selectedModule.module_id,
-        status: "completed",
-      });
-
-      setProgressMap((prev) => ({
-        ...prev,
-        [selectedModule.module_id]: "completed",
-      }));
-    } catch (err) {
-      console.error("Error marking as completed:", err);
-      alert("Failed to mark as completed. Try again.");
-    }
-  };
+  if (loading) return <div className="page-content">Loading...</div>;
+  if (!modules.length) return <div className="page-content">No courses enrolled yet.</div>;
 
   return (
     <div className="page-content">
-      <h2>My Courses</h2>
-
-      {loading ? (
-        <div className="text-center my-5">
-          <Spinner animation="border" variant="success" />
-        </div>
-      ) : error ? (
-        <Alert variant="danger" className="text-center">
-          {error}
-        </Alert>
-      ) : enrollments.length === 0 ? (
-        <Alert variant="info" className="text-center">
-          You are not enrolled in any courses yet.
-        </Alert>
-      ) : (
-        Object.entries(coursesMap).map(([courseId, course]) => (
-          <div key={courseId} className="mb-5">
-            <h4 className="mb-3">{course.course_title}</h4>
-            <Table striped bordered hover responsive>
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Module Title</th>
-                  <th>Status</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {course.modules.map((mod, idx) => {
-                  const isCurrent =
-                    selectedModule && mod.module_id === selectedModule.module_id;
-                  return (
-                    <tr
-                      key={mod.module_id}
-                      className={isCurrent ? "table-primary" : ""}
-                    >
-                      <td>{idx + 1}</td>
-                      <td>{mod.module_title}</td>
-                      <td>
-                        {progressMap[mod.module_id] === "completed" ? (
-                          <Badge bg="success">Completed</Badge>
-                        ) : (
-                          <Badge bg="warning">In Progress</Badge>
-                        )}
-                      </td>
-                      <td>
-                        <Button
-                          variant="success"
-                          className="take-module-btn"
-                          onClick={() => openModal(mod, course.modules)}
-                        >
-                          Take Module
-                        </Button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </Table>
+      {modules.map((module) =>
+        module.contents.map((content) => (
+          <div
+            key={content.content_id}
+            style={{
+              border: "1px solid #ccc",
+              margin: "10px",
+              padding: "10px",
+              width: "200px",
+              cursor: "pointer",
+            }}
+            onClick={() => setSelectedContent(content)}
+          >
+            <img
+              src={content.image || "/uploads/default/default-avatar.png"}
+              alt={content.content_title}
+              style={{ width: "100%", height: "100px", objectFit: "cover" }}
+            />
+            <h4>{module.module_title}</h4>
+            <p>{content.content_title}</p>
           </div>
         ))
       )}
 
-      {/* ===== Module Modal ===== */}
-      <Modal
-        show={showModal}
-        onHide={closeModal}
-        centered
-        dialogClassName="custom-modal-80"
-        size="lg"
-      >
-        {selectedModule && (
-          <>
-            <Modal.Header closeButton>
-              <Modal.Title>{selectedModule.module_title}</Modal.Title>
-            </Modal.Header>
+      {/* Modal */}
+      {selectedContent && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            background: "rgba(0,0,0,0.5)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            zIndex: 9999,
+          }}
+          onClick={() => setSelectedContent(null)}
+        >
+          <div
+            style={{
+              width: "80%",
+              height: "80%",
+              background: "#fff",
+              display: "flex",
+              flexDirection: "row",
+            }}
+            onClick={(e) => e.stopPropagation()} // prevent modal close on content click
+          >
+            {/* Left side: title + description */}
+            <div style={{ width: "50%", padding: "20px", overflowY: "auto" }}>
+              <h2>{selectedContent.content_title}</h2>
+              <p>{selectedContent.description}</p>
+            </div>
 
-            <Modal.Body>
-              <Row>
-                {/* ✅ Left: Info + materials */}
-                <Col md={6} sm={12}>
-                  <h5>Course:</h5>
-                  <p>{selectedModule.course_title}</p>
-
-                  <h5>Module Description:</h5>
-                  <p>{selectedModule.module_description}</p>
-
-                  {selectedModule.meta_description && (
-                    <>
-                      <h5>Meta Description:</h5>
-                      <p>{selectedModule.meta_description}</p>
-                    </>
-                  )}
-
-                  {/* ✅ Materials (download immediately) */}
-                  <h5>Materials:</h5>
-                  {selectedModule.materials_path ? (
-                    <p>
-                      <a
-                        href={buildFileURL(selectedModule.materials_path)}
-                        download
-                        className="btn btn-outline-primary btn-sm"
-                      >
-                        📄 Download Material
-                      </a>
-                    </p>
-                  ) : (
-                    <p className="text-muted">No materials uploaded yet.</p>
-                  )}
-
-                  {/* ✅ VR Content (open in new tab) */}
-                  <h5>VR Content:</h5>
-                  {selectedModule.vr_content_path ? (
-                    <p>
-                      <a
-                        href={buildFileURL(selectedModule.vr_content_path)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="btn btn-outline-info btn-sm"
-                      >
-                        🕶️ View VR Content
-                      </a>
-                    </p>
-                  ) : (
-                    <p className="text-muted">No VR content uploaded yet.</p>
-                  )}
-                </Col>
-
-                {/* ✅ Right: Video and Image stacked */}
-                <Col md={6} sm={12}>
-                  {/* ✅ Video (supports YouTube + uploaded files) */}
-                  <h5>Video:</h5>
-                  {selectedModule.video_url ? (
-                    selectedModule.video_url.includes("youtube.com") ||
-                    selectedModule.video_url.includes("youtu.be") ? (
-                      <iframe
-                        width="100%"
-                        height="250"
-                        style={{
-                          borderRadius: "8px",
-                          marginBottom: "15px",
-                          border: "none",
-                        }}
-                        src={
-                          selectedModule.video_url.includes("watch?v=")
-                            ? selectedModule.video_url.replace(
-                                "watch?v=",
-                                "embed/"
-                              )
-                            : selectedModule.video_url.replace(
-                                "youtu.be/",
-                                "www.youtube.com/embed/"
-                              )
-                        }
-                        title={selectedModule.module_title}
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                      ></iframe>
-                    ) : (
-                      <video
-                        src={buildFileURL(selectedModule.video_url)}
-                        controls
-                        style={{
-                          width: "100%",
-                          height: "250px",
-                          borderRadius: "8px",
-                          objectFit: "cover",
-                          marginBottom: "15px",
-                        }}
-                      />
-                    )
-                  ) : (
-                    <p className="text-muted">No video link available.</p>
-                  )}
-
-                  {/* Image below video */}
-                  <h5>Module Image:</h5>
-                  {selectedModule.image_path ? (
-                    <Image
-                      src={buildFileURL(selectedModule.image_path)}
-                      alt={selectedModule.module_title}
-                      fluid
-                      rounded
-                      style={{
-                        width: "100%",
-                        height: "250px",
-                        objectFit: "cover",
-                        borderRadius: "8px",
-                        cursor: "pointer",
-                      }}
-                      onClick={() =>
-                        window.open(
-                          buildFileURL(selectedModule.image_path),
-                          "_blank"
-                        )
-                      }
-                    />
-                  ) : (
-                    <p className="text-muted">No image uploaded yet.</p>
-                  )}
-                </Col>
-              </Row>
-            </Modal.Body>
-
-            <Modal.Footer className="d-flex justify-content-between">
-              <div>
-                <Button
-                  variant="secondary"
-                  onClick={() => goToModule(-1)}
-                  disabled={currentModuleIndex === 0}
-                  className="me-2"
-                >
-                  Previous
-                </Button>
-                <Button
-                  variant="secondary"
-                  onClick={() => goToModule(1)}
-                  disabled={
-                    currentModuleIndex === currentCourseModules.length - 1
-                  }
-                >
-                  Next
-                </Button>
-              </div>
-              <div>
-                {progressMap[selectedModule.module_id] !== "completed" && (
-                  <Button variant="success" onClick={markCompleted}>
-                    Mark as Completed
-                  </Button>
-                )}
-                <Button
-                  variant="secondary"
-                  onClick={closeModal}
-                  className="ms-2"
-                >
-                  Close
-                </Button>
-              </div>
-            </Modal.Footer>
-          </>
-        )}
-      </Modal>
+            {/* Right side: image + video */}
+            <div style={{ width: "50%", padding: "20px" }}>
+              <img
+                src={selectedContent.image || "/uploads/default/default-avatar.png"}
+                alt={selectedContent.content_title}
+                style={{ width: "100%", height: "50%", objectFit: "cover" }}
+              />
+              {selectedContent.video && (
+                <iframe
+                  width="100%"
+                  height="50%"
+                  src={selectedContent.video}
+                  title={selectedContent.content_title}
+                  frameBorder="0"
+                  allowFullScreen
+                ></iframe>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

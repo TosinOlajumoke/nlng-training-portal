@@ -31,7 +31,7 @@ const InstructorLayout = () => {
       icon: <FaBook />,
     },
     {
-      label: "Enrolled Trainee",
+      label: "Enrollment Tab",
       path: "/instructor/enroll-trainee",
       icon: <FaUserPlus />,
     },   
