@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react"; 
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { Table } from "react-bootstrap";
 import { ToastContainer, toast } from "react-toastify";
@@ -24,6 +24,11 @@ const EnrollTraineeInstructor = () => {
     return () => clearInterval(interval);
   }, []);
 
+  // --- REVERSAL LOGIC: Modules ---
+  // Create a reversed copy of the data for rendering (newest modules on top)
+  const reversedData = [...data].reverse();
+  // ------------------------------
+
   return (
     <div className="container py-4 page-content">
       <ToastContainer />
@@ -40,18 +45,24 @@ const EnrollTraineeInstructor = () => {
             </tr>
           </thead>
           <tbody>
-            {data.length > 0 ? (
-              data.map((module) =>
+            {reversedData.length > 0 ? (
+              // Use the reversedData for mapping modules
+              reversedData.map((module) =>
                 module.contents.length > 0 ? (
-                  module.contents.map((content, index) => (
+                  // --- REVERSAL LOGIC: Content ---
+                  // Reverse the contents array before mapping (newest content on top)
+                  [...module.contents].reverse().map((content, index, reversedContents) => (
+                    // ------------------------------
                     <tr key={content.id}>
+                      {/* Note: Use reversedContents.length here for accurate rowSpan */}
                       {index === 0 && (
-                        <td rowSpan={module.contents.length}>{module.title}</td>
+                        <td rowSpan={reversedContents.length}>{module.title}</td>
                       )}
                       <td>{content.title}</td>
                       <td>
                         {content.enrolledTrainees.length > 0 ? (
                           <ul className="mb-0 ps-3">
+                            {/* Assuming enrolledTrainees order doesn't need to be reversed here */}
                             {content.enrolledTrainees.map((t) => (
                               <li key={t.trainee_id}>{t.first_name} {t.last_name}</li>
                             ))}
