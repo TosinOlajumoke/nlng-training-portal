@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { useAuth } from "../../context/AuthContext"; 
+import { useAuth } from "../../context/AuthContext";
 import { Modal, Button, Card, Col, Row, Spinner } from "react-bootstrap";
 import { FaBookOpen } from "react-icons/fa";
 import { ToastContainer, toast } from "react-toastify";
@@ -67,9 +67,9 @@ export const MyCoursesTrainee = () => {
             </div>
         );
     }
-    
+
     // Flatten modules and content into a single array of tiles
-    const tilesData = [...enrolledModules].reverse().flatMap(module => 
+    const tilesData = [...enrolledModules].reverse().flatMap(module =>
         [...module.contents].reverse().map(content => ({
             moduleTitle: module.title,
             contentTitle: content.title,
@@ -77,20 +77,20 @@ export const MyCoursesTrainee = () => {
             contentImage: content.image,
         }))
     );
-    
+
     return (
         <div className="container py-4 page-content">
             <ToastContainer />
             <h2 className="mb-4">📚 My Enrolled Courses</h2>
-            
+
             {tilesData.length === 0 ? (
                 <p className="text-center text-muted">You are not currently enrolled in any content.</p>
             ) : (
                 <Row xs={1} md={2} lg={3} className="g-4">
                     {tilesData.map((tile, index) => (
                         <Col key={index}>
-                            <Card 
-                                onClick={() => openContentModal(tile.content, tile.moduleTitle)} 
+                            <Card
+                                onClick={() => openContentModal(tile.content, tile.moduleTitle)}
                                 className="h-100 shadow-sm course-tile"
                                 style={{ cursor: 'pointer', transition: 'transform 0.2s' }}
                                 onMouseOver={e => e.currentTarget.style.transform = 'scale(1.03)'}
@@ -98,10 +98,10 @@ export const MyCoursesTrainee = () => {
                             >
                                 {/* 🖼️ CARD IMAGE DISPLAY */}
                                 {tile.contentImage && (
-                                    <Card.Img 
-                                        variant="top" 
-                                       src={STATIC_BASE_URL + tile.contentImage} // Uses the image path from the database
-                                        style={{ height: '180px', objectFit: 'cover' }} 
+                                    <Card.Img
+                                        variant="top"
+                                        src={STATIC_BASE_URL + tile.contentImage} // Uses the image path from the database
+                                        style={{ height: '180px', objectFit: 'cover' }}
                                     />
                                 )}
                                 <Card.Body>
@@ -118,8 +118,14 @@ export const MyCoursesTrainee = () => {
                 </Row>
             )}
 
-            {/* Content Detail Modal (80% screen size) */}
-            <Modal show={showModal} onHide={handleCloseModal} size="xl" centered dialogClassName="modal-80w">
+            {/* Content Detail Modal (90% screen size via custom CSS class) */}
+            <Modal 
+                show={showModal} 
+                onHide={handleCloseModal} 
+                size="xl" 
+                centered 
+                dialogClassName="modal-90-percent" // Custom class for 90% width
+            >
                 <Modal.Header closeButton>
                     <Modal.Title>{selectedModuleTitle}</Modal.Title>
                 </Modal.Header>
@@ -129,30 +135,13 @@ export const MyCoursesTrainee = () => {
                             {/* Left Side: Content Details (50%) */}
                             <Col md={6}>
                                 <h4 style={{ color: "#006400", paddingBottom: "6px" }}>{selectedContent.title}</h4>
-  
+
                                 <p style={{ whiteSpace: 'pre-wrap' }}>{selectedContent.description}</p>
                             </Col>
 
-                            {/* Right Side: Media (50%) */}
+                            {/* Right Side: Media (50%) - Image removed from here */}
                             <Col md={6} className="d-flex flex-column gap-3">
-                                {/* Image (50% height) */}
-                                {selectedContent.image && (
-                                    <div style={{ flex: 1, marginBottom: '10px' }}>
-                                        <img 
-                                            src={STATIC_BASE_URL + selectedContent.image} 
-                                            alt={selectedContent.title} 
-                                            className="img-fluid rounded w-100" 
-                                             style={{
-                      width: "100%",
-                      maxHeight: "400px",
-                      objectFit: "cover",
-                      borderRadius: "10px",
-                    }}
-                                        />
-                                    </div>
-                                )}
-                                
-                                {/* YouTube Video (50% height) */}
+                                {/* YouTube Video */}
                                 {selectedContent.video && getYouTubeId(selectedContent.video) && (
                                     <div style={{ flex: 1 }}>
                                         <iframe
@@ -163,7 +152,7 @@ export const MyCoursesTrainee = () => {
                                             frameBorder="0"
                                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                                             allowFullScreen
-                                            style={{ minHeight: '300px' }} 
+                                            style={{ minHeight: '300px' }}
                                         ></iframe>
                                     </div>
                                 )}

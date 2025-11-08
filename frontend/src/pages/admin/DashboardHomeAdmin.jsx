@@ -1,4 +1,3 @@
-// pages/admin/DashboardHomeAdmin.jsx
 import React from "react";
 import DashboardReusable from "../../components/DashboardReusable";
 import { useAuth } from "../../context/AuthContext";
@@ -8,9 +7,9 @@ const DashboardHomeAdmin = () => {
 
   const adminCardsConfig = [
     { label: "Total Users", key: "total_users" },
-    { label: "Admins", key: "total_admins" },
-    { label: "Instructors", key: "total_instructors" },
-    { label: "Trainees", key: "total_trainees" },
+    { label: "Total Admins", key: "total_admins" },
+    { label: "Total Instructors", key: "total_instructors" },
+    { label: "Total Trainees", key: "total_trainees" },
   ];
 
   return (
@@ -21,3 +20,4 @@ const DashboardHomeAdmin = () => {
 };
 
 export default DashboardHomeAdmin;
+

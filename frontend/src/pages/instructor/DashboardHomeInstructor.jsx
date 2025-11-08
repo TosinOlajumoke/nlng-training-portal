@@ -1,14 +1,13 @@
-// pages/instructor/DashboardHomeInstructor.jsx
 import React from "react";
 import DashboardReusable from "../../components/DashboardReusable";
 import { useAuth } from "../../context/AuthContext";
 
 const DashboardHomeInstructor = () => {
-    const { user } = useAuth();
+     const { user } = useAuth();
 
   const instructorCardsConfig = [
-    { label: "Total Contents", key: "total_contents" },
     { label: "Total Modules", key: "total_modules" },
+    { label: "Total Contents", key: "total_contents" },
     { label: "Trainees Enrolled", key: "total_trainees" },
   ];
 
@@ -20,3 +19,4 @@ const DashboardHomeInstructor = () => {
 };
 
 export default DashboardHomeInstructor;
+

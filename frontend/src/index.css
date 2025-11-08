@@ -742,8 +742,8 @@ body {
 }
 
 /* myCoursesTrainee Modal */
-.modal-80w .modal-dialog {
-    max-width: 80vw;
-    margin-top: 30px; 
-    margin-bottom: 30px;
+.modal-90-percent .modal-dialog {
+    /* Sets the dialog box to take up 90% of the viewport width */
+    max-width: 90vw; 
+    width: 90vw;     
 }

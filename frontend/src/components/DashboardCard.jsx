@@ -1,36 +1,26 @@
 import React from "react";
 import PropTypes from "prop-types";
 import { motion } from "framer-motion";
+import "bootstrap/dist/css/bootstrap.min.css";
 
-const DashboardCard = ({ label, count, className = "", subtitle }) => {
-  const keyForAnim = typeof count === "object" ? JSON.stringify(count) : String(count);
-
-  return (
-    <motion.div
-      key={keyForAnim}
-      initial={{ opacity: 0, y: 8, scale: 0.98 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ duration: 0.35 }}
-      className={`dashboard-card ${className}`}
-    >
-      <div className="dashboard-card-inner">
-        <div className="dashboard-label">{label}</div>
-        <div className="dashboard-count">{count}</div>
-        {subtitle && <div className="dashboard-subtitle">{subtitle}</div>}
-      </div>
-    </motion.div>
-  );
-};
+const DashboardCard = ({ label, count }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 10 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.4 }}
+    className="card shadow-sm text-center p-3 h-100"
+  >
+    <div className="card-body">
+      <h6 className="text-secondary">{label}</h6>
+      <h4 style={{ color: "#006400" }}>{count}</h4>
+    </div>
+  </motion.div>
+);
 
 DashboardCard.propTypes = {
   label: PropTypes.string.isRequired,
-  count: PropTypes.oneOfType([
-    PropTypes.string,
-    PropTypes.number,
-    PropTypes.node,
-  ]).isRequired,
-  className: PropTypes.string,
-  subtitle: PropTypes.string,
+  count: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
 };
 
 export default DashboardCard;
+

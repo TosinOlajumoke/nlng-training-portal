@@ -1,15 +1,15 @@
-// components/DashboardReusable.jsx
 import React, { useEffect, useState, useCallback } from "react";
 import DashboardCard from "./DashboardCard";
 import Charts from "./Charts";
 import defaultAvatar from "../assets/default-avatar.png";
 import { API_BASE_URL } from "../api";
 import { useAuth } from "../context/AuthContext";
+import "bootstrap/dist/css/bootstrap.min.css";
+const STATIC_BASE_URL = API_BASE_URL.replace('/api', '');
 
-const DashboardReusable = ({ fetchUrl = "/users/dashboard", cardsConfig = [], refreshInterval = 30000 }) => {
-  const { user: authUser } = useAuth(); // expects context providing logged-in user
+const DashboardReusable = ({ fetchUrl = "/users/dashboard", cardsConfig = [] }) => {
+  const { user: authUser } = useAuth();
   const userId = authUser?.id;
-
   const [user, setUser] = useState(null);
   const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(true);
@@ -20,98 +20,78 @@ const DashboardReusable = ({ fetchUrl = "/users/dashboard", cardsConfig = [], re
     try {
       setLoading(true);
       const res = await fetch(`${API_BASE_URL}${fetchUrl}/${userId}`);
-      const payload = await res.json();
-      // payload shape { user, stats }
-      setUser(payload.user || {});
-      setStats(payload.stats || {});
-      setLoading(false);
+      const data = await res.json();
+      setUser(data.user);
+      setStats(data.stats);
     } catch (err) {
       console.error("Dashboard fetch error:", err);
+    } finally {
       setLoading(false);
     }
   }, [userId, fetchUrl]);
 
-  useEffect(() => {
-    fetchDashboardData();
-    const id = setInterval(fetchDashboardData, refreshInterval);
-    return () => clearInterval(id);
-  }, [fetchDashboardData, refreshInterval]);
+  useEffect(() => { fetchDashboardData(); }, [fetchDashboardData]);
 
- const handleUpload = async (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-  setUploading(true);
+  const handleProfileUpload = async (e) => {
+    if (!e.target.files[0]) return;
+    const formData = new FormData();
+    formData.append("profile_picture", e.target.files[0]);
 
-  const formData = new FormData();
-  formData.append("profile", file);
-
-  try {
-    const res = await fetch(`${API_BASE_URL}/users/upload-profile/${userId}`, {
-      method: "POST",
-      body: formData,
-    });
-    const data = await res.json();
-    setUploading(false);
-
-    if (data.imageUrl) {
-      setUser((prev) => ({ ...prev, profile_picture: data.imageUrl }));
-
-      // ✅ Update auth context if available
-      if (typeof updateUser === "function") {
-        updateUser((prev) => ({
-          ...prev,
-          profile_picture: data.imageUrl,
-        }));
-      }
+    try {
+      setUploading(true);
+      const res = await fetch(`${API_BASE_URL}/users/${userId}/upload-profile`, {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      if (data.user) setUser(data.user);
+    } catch (err) {
+      console.error("Upload error:", err);
+    } finally {
+      setUploading(false);
     }
-  } catch (err) {
-    console.error("Upload error:", err);
-    setUploading(false);
-  }
-};
+  };
 
-
-  if (!user && loading) return <p>Loading dashboard...</p>;
+  if (loading) return <p>Loading dashboard...</p>;
   if (!user) return <p>User not found</p>;
 
   const displayName = user.role === "instructor"
-    ? `${user.title ? user.title + " " : ""}${user.first_name} ${user.last_name || ""}`
-    : `${user.first_name} ${user.last_name || ""}`;
+    ? `${user.title ? user.title + " " : ""}${user.first_name} ${user.last_name}`
+    : `${user.first_name} ${user.last_name}`;
 
+  const chartType = user.role;
   const profileImg = user.profile_picture || defaultAvatar;
 
-  // Determine chartType from user role
-  const chartType = user.role === "instructor" ? "instructor" : user.role === "trainee" ? "trainee" : "admin";
-
   return (
-    <div className="dashboard">
-      <div className="dashboard-header">
+    <div className="container-fluid dashboard py-3">
+      <div className="d-flex justify-content-between align-items-center flex-wrap mb-3">
         <div>
           <h2>Welcome back, {displayName} 👋</h2>
-          {/* Only show instrucor-specific title above charts */}
-          {user.role === "instructor"}
         </div>
-
-        <div className="profile-box">
-      <img src={user?.profile_picture?.startsWith("http") ? user.profile_picture
-      : `${API_BASE_URL.replace("/api", "")}${user.profile_picture}`} alt="Profile"
-  className="profile-img"/>
-
-          <label className="upload-btn">
+        <div className="d-flex align-items-center gap-2">
+   
+             <img
+            src={profileImg.startsWith("http") ? profileImg : `${API_BASE_URL.replace("/api", "")}/${profileImg}`}
+            alt="Profile"
+            className="rounded-circle border"
+            width={80}
+            height={80}
+          />
+          <label className="btn btn-success" style={{ backgroundColor: "#006400", color: "white" }}>
             {uploading ? "Uploading..." : "Upload"}
-            <input type="file" hidden onChange={handleUpload} />
+            <input type="file" onChange={handleProfileUpload} hidden />
           </label>
         </div>
       </div>
 
-      <h5 className="overview-text">Here’s an overview of your platform at a glance</h5>
+      <h5 className="text-secondary mb-3">Here’s an overview of your platform at a glance</h5>
 
-      <div className="cards-grid">
-        {cardsConfig.map((card, idx) => {
-          const rawVal = stats[card.key];
-          const displayValue = rawVal === undefined || rawVal === null ? "N/A" : rawVal;
-          return <DashboardCard key={idx} label={card.label} count={card.bold ? <strong>{displayValue}</strong> : displayValue} />;
-        })}
+      <div className="row g-3 mb-4">
+        {cardsConfig.map((card, idx) => (
+          <div key={idx} className="col-12 col-sm-6 col-md-4 col-lg-3">
+            <DashboardCard label={card.label} count={stats[card.key] ?? "N/A"} />
+          </div>
+        ))}
       </div>
 
       <Charts data={stats} chartType={chartType} />
