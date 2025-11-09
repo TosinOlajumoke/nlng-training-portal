@@ -419,6 +419,7 @@ const UserManagement = ({ adminColumns, instructorColumns, traineeColumns }) => 
                   <option value="Prof.">Prof.</option>
                   <option value="Mr.">Mr.</option>
                   <option value="Mrs.">Mrs.</option>
+                  <option value="Ms.">Ms.</option>
                 </select>
               </div>
             )}

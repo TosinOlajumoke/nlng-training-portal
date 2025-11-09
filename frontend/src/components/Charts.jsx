@@ -39,7 +39,7 @@ const Charts = ({ data = {}, chartType }) => {
           <ResponsiveContainer>
             <BarChart data={pieData}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" /><YAxis /><Tooltip /><Bar dataKey="value" fill="#007bff" />
+              <XAxis dataKey="name" /><YAxis /><Tooltip /><Bar dataKey="value" fill="#9933ff" />
             </BarChart>
           </ResponsiveContainer>
         </ChartContainer>

@@ -686,6 +686,9 @@ body {
   height: 150px;
   object-fit: cover;
 }
+.content-overview {
+margin-top: 10px;
+   }
 
 .content-info {
   display: flex;
@@ -693,7 +696,11 @@ body {
   align-items: center;
   padding: 0.5rem 1rem;
 }
-
+ .description-box {
+     font-size: 1rem;
+          color: #333;
+          padding-right: 10px;
+        }
 .delete-btn {
   border: none;
   background: transparent;
@@ -711,6 +718,12 @@ body {
     width: 100%;
   }
  }
+ @media (max-width: 768px) {
+          .description-box {
+            text-align: justify;
+          }
+        }
+
     
 /* INSTRUCTOR MODULE CONTENT */
 .module-card {
@@ -746,4 +759,27 @@ body {
     /* Sets the dialog box to take up 90% of the viewport width */
     max-width: 90vw; 
     width: 90vw;     
+}
+
+/*  90% width and height for the view modal */
+.custom-view-modal {
+  max-width: 90vw !important;
+  width: 90vw !important;
+}
+
+.custom-view-modal .modal-content {
+  border-radius: 10px;
+}
+
+.custom-view-modal .modal-body {
+  padding: 2rem !important;
+  overflow-y: visible !important;
+}
+
+/* Responsive stacking on smaller screens */
+@media (max-width: 992px) {
+  .custom-view-modal .modal-body .d-flex {
+    flex-direction: column !important;
+  }
+
 }

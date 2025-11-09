@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { Button, Modal, Form } from "react-bootstrap";
-import { FaTrash } from "react-icons/fa";
+import { FaTrash, FaEdit } from "react-icons/fa";
 import { MdLibraryAdd } from "react-icons/md";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -11,12 +11,14 @@ const SERVER_BASE_URL = API_BASE_URL.replace(/\/api$/, "");
 
 const ContentLibrary = ({ isAdmin = true }) => {
   const [showModal, setShowModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [image, setImage] = useState(null);
   const [contents, setContents] = useState([]);
   const [selectedContent, setSelectedContent] = useState(null);
+  const [editPreview, setEditPreview] = useState(null);
 
   useEffect(() => {
     fetchContents();
@@ -72,6 +74,46 @@ const ContentLibrary = ({ isAdmin = true }) => {
     }
   };
 
+  const handleEditClick = (content) => {
+    setSelectedContent(content);
+    setTitle(content.title);
+    setDescription(content.description);
+    setEditPreview(content.image);
+    setShowEditModal(true);
+  };
+
+  const handleUpdate = async (e) => {
+    e.preventDefault();
+    if (!title || !description) {
+      toast.error("Title and description are required");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("title", title);
+    formData.append("description", description);
+    if (image) formData.append("image", image);
+
+    try {
+      await axios.put(
+        `${API_BASE_URL}/users/admin_contents/${selectedContent.id}`,
+        formData,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+        }
+      );
+      toast.success("Content updated successfully");
+      setShowEditModal(false);
+      setTitle("");
+      setDescription("");
+      setImage(null);
+      fetchContents();
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to update content");
+    }
+  };
+
   const getImageUrl = (imagePath) => {
     if (!imagePath) return "";
     const cleanPath = imagePath
@@ -106,31 +148,33 @@ const ContentLibrary = ({ isAdmin = true }) => {
         {contents.length > 0 ? (
           contents.map((item) => (
             <div className="col" key={item.id}>
-              <div
-                className="card h-100 shadow-sm"
-                onClick={() => openViewModal(item)}
-                style={{ cursor: "pointer" }}
-              >
+              <div className="card h-100 shadow-sm" style={{ position: "relative" }}>
                 <img
                   src={getImageUrl(item.image)}
                   alt={item.title}
                   className="card-img-top"
-                  style={{ height: "200px", objectFit: "cover" }}
+                  onClick={() => openViewModal(item)}
+                  style={{ height: "200px", objectFit: "cover", cursor: "pointer" }}
                 />
-                <div className="card-body position-relative">
+                <div className="card-body">
                   <h5 className="card-title">{item.title}</h5>
-
-                  {/* Only admins see delete button */}
                   {isAdmin && (
-                    <button
-                      className="btn btn-sm btn-danger position-absolute top-0 end-0 m-2"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDelete(item.id);
-                      }}
-                    >
-                      <FaTrash />
-                    </button>
+                    <div className="d-flex justify-content-end gap-2 mt-2">
+                      <Button
+                        variant="outline-success"
+                        size="sm"
+                        onClick={() => handleEditClick(item)}
+                      >
+                        <FaEdit />
+                      </Button>
+                      <Button
+                        variant="outline-danger"
+                        size="sm"
+                        onClick={() => handleDelete(item.id)}
+                      >
+                        <FaTrash />
+                      </Button>
+                    </div>
                   )}
                 </div>
               </div>
@@ -143,7 +187,7 @@ const ContentLibrary = ({ isAdmin = true }) => {
 
       {/* ✅ Add Modal (Admin only) */}
       {isAdmin && (
-        <Modal show={showModal} onHide={() => setShowModal(false)}>
+        <Modal show={showModal} onHide={() => setShowModal(false)} centered>
           <Modal.Header closeButton>
             <Modal.Title>Add New Content</Modal.Title>
           </Modal.Header>
@@ -200,6 +244,65 @@ const ContentLibrary = ({ isAdmin = true }) => {
         </Modal>
       )}
 
+      {/* ✅ Edit Modal */}
+      {isAdmin && selectedContent && (
+        <Modal show={showEditModal} onHide={() => setShowEditModal(false)} centered>
+          <Modal.Header closeButton>
+            <Modal.Title>Edit Content</Modal.Title>
+          </Modal.Header>
+          <Form onSubmit={handleUpdate}>
+            <Modal.Body>
+              <Form.Group className="mb-3">
+                <Form.Label>Title</Form.Label>
+                <Form.Control
+                  type="text"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                />
+              </Form.Group>
+
+              <Form.Group className="mb-3">
+                <Form.Label>Description</Form.Label>
+                <Form.Control
+                  as="textarea"
+                  rows={3}
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                />
+              </Form.Group>
+
+              <Form.Group className="mb-3">
+                <Form.Label>Update Image</Form.Label>
+                <Form.Control
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setImage(e.target.files[0])}
+                />
+              </Form.Group>
+
+              {editPreview && (
+                <div className="text-center mb-3">
+                  <img
+                    src={getImageUrl(editPreview)}
+                    alt="Preview"
+                    className="img-fluid rounded"
+                    style={{ maxHeight: "200px", objectFit: "cover" }}
+                  />
+                </div>
+              )}
+            </Modal.Body>
+            <Modal.Footer>
+              <Button variant="secondary" onClick={() => setShowEditModal(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" style={{ backgroundColor: "#006400" }}>
+                Update
+              </Button>
+            </Modal.Footer>
+          </Form>
+        </Modal>
+      )}
+
       {/* ✅ View Modal */}
       <Modal
         show={showViewModal}
@@ -219,7 +322,10 @@ const ContentLibrary = ({ isAdmin = true }) => {
               >
                 Overview
               </h4>
-              <div className="content-overview d-flex flex-column flex-md-row align-items-start gap-4">
+              <div
+                className="content-overview d-flex flex-column flex-md-row align-items-start gap-4"
+                style={{ alignItems: "stretch" }}
+              >
                 <div className="order-1 order-md-2 flex-fill text-center">
                   <img
                     src={getImageUrl(selectedContent.image)}
@@ -233,10 +339,16 @@ const ContentLibrary = ({ isAdmin = true }) => {
                     }}
                   />
                 </div>
-                <div className="order-2 order-md-1 flex-fill">
-                  <p style={{ lineHeight: "1.6" }}>
-                    {selectedContent.description}
-                  </p>
+                <div className="order-2 order-md-1 flex-fill description-box">
+                  <div style={{ lineHeight: "1.6", textAlign: "justify" }}>
+                    {selectedContent.description
+                      ?.split(/\n+/)
+                      .map((para, index) => (
+                        <p key={index} style={{ marginBottom: "1em" }}>
+                          {para.trim()}
+                        </p>
+                      ))}
+                  </div>
                 </div>
               </div>
             </>
