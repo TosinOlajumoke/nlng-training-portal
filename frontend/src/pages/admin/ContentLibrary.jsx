@@ -9,13 +9,18 @@ import { API_BASE_URL } from "../../api";
 
 const SERVER_BASE_URL = API_BASE_URL.replace(/\/api$/, "");
 
-const ContentLibrary = ({ isAdmin = true }) => {
+const ContentLibrary = ({
+  isAdmin = true,
+  selectionMode = false,
+  onSelectContent = null
+}) => {
   const [showModal, setShowModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [image, setImage] = useState(null);
+  const [videoUrl, setVideoUrl] = useState("");
   const [contents, setContents] = useState([]);
   const [selectedContent, setSelectedContent] = useState(null);
   const [editPreview, setEditPreview] = useState(null);
@@ -34,10 +39,11 @@ const ContentLibrary = ({ isAdmin = true }) => {
     }
   };
 
+  // ----- ADD CONTENT -----
   const handleAddContent = async (e) => {
     e.preventDefault();
     if (!title || !description || !image) {
-      toast.error("All fields are required");
+      toast.error("Title, description, and image are required");
       return;
     }
 
@@ -45,6 +51,7 @@ const ContentLibrary = ({ isAdmin = true }) => {
     formData.append("title", title);
     formData.append("description", description);
     formData.append("image", image);
+    formData.append("video_url", videoUrl);
 
     try {
       await axios.post(`${API_BASE_URL}/users/admin_contents`, formData, {
@@ -55,6 +62,7 @@ const ContentLibrary = ({ isAdmin = true }) => {
       setTitle("");
       setDescription("");
       setImage(null);
+      setVideoUrl("");
       fetchContents();
     } catch (err) {
       console.error(err);
@@ -62,6 +70,7 @@ const ContentLibrary = ({ isAdmin = true }) => {
     }
   };
 
+  // ----- DELETE CONTENT -----
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this content?")) return;
     try {
@@ -74,11 +83,13 @@ const ContentLibrary = ({ isAdmin = true }) => {
     }
   };
 
+  // ----- EDIT CONTENT -----
   const handleEditClick = (content) => {
     setSelectedContent(content);
     setTitle(content.title);
     setDescription(content.description);
     setEditPreview(content.image);
+    setVideoUrl(content.video_url || "");
     setShowEditModal(true);
   };
 
@@ -93,6 +104,7 @@ const ContentLibrary = ({ isAdmin = true }) => {
     formData.append("title", title);
     formData.append("description", description);
     if (image) formData.append("image", image);
+    formData.append("video_url", videoUrl);
 
     try {
       await axios.put(
@@ -107,6 +119,7 @@ const ContentLibrary = ({ isAdmin = true }) => {
       setTitle("");
       setDescription("");
       setImage(null);
+      setVideoUrl("");
       fetchContents();
     } catch (err) {
       console.error(err);
@@ -132,7 +145,9 @@ const ContentLibrary = ({ isAdmin = true }) => {
       <ToastContainer />
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h2>Content Library</h2>
-        {isAdmin && (
+
+        {/* Admin Add Button (hidden in selection mode) */}
+        {isAdmin && !selectionMode && (
           <Button
             onClick={() => setShowModal(true)}
             className="d-flex align-items-center gap-2"
@@ -143,7 +158,7 @@ const ContentLibrary = ({ isAdmin = true }) => {
         )}
       </div>
 
-      {/* ✅ Content Grid */}
+      {/* Content Grid */}
       <div className="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-4">
         {contents.length > 0 ? (
           contents.map((item) => (
@@ -158,7 +173,9 @@ const ContentLibrary = ({ isAdmin = true }) => {
                 />
                 <div className="card-body">
                   <h5 className="card-title">{item.title}</h5>
-                  {isAdmin && (
+
+                  {/* Admin Buttons (Edit/Delete) */}
+                  {isAdmin && !selectionMode && (
                     <div className="d-flex justify-content-end gap-2 mt-2">
                       <Button
                         variant="outline-success"
@@ -176,6 +193,21 @@ const ContentLibrary = ({ isAdmin = true }) => {
                       </Button>
                     </div>
                   )}
+
+                  {/* Selection Mode Button */}
+                  {selectionMode && (
+                    <div className="d-flex justify-content-end mt-2">
+                      <Button
+                        variant="outline-primary"
+                        size="sm"
+                        onClick={() => {
+                          if (onSelectContent) onSelectContent(item);
+                        }}
+                      >
+                        Select
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -185,8 +217,8 @@ const ContentLibrary = ({ isAdmin = true }) => {
         )}
       </div>
 
-      {/* ✅ Add Modal (Admin only) */}
-      {isAdmin && (
+      {/* ----- ADD MODAL ----- */}
+      {isAdmin && !selectionMode && (
         <Modal show={showModal} onHide={() => setShowModal(false)} centered>
           <Modal.Header closeButton>
             <Modal.Title>Add New Content</Modal.Title>
@@ -231,6 +263,16 @@ const ContentLibrary = ({ isAdmin = true }) => {
                   />
                 </div>
               )}
+
+              <Form.Group className="mb-3">
+                <Form.Label>YouTube Video URL</Form.Label>
+                <Form.Control
+                  type="url"
+                  placeholder="https://www.youtube.com/watch?v=..."
+                  value={videoUrl}
+                  onChange={(e) => setVideoUrl(e.target.value)}
+                />
+              </Form.Group>
             </Modal.Body>
             <Modal.Footer>
               <Button variant="secondary" onClick={() => setShowModal(false)}>
@@ -244,8 +286,8 @@ const ContentLibrary = ({ isAdmin = true }) => {
         </Modal>
       )}
 
-      {/* ✅ Edit Modal */}
-      {isAdmin && selectedContent && (
+      {/* ----- EDIT MODAL ----- */}
+      {isAdmin && !selectionMode && selectedContent && (
         <Modal show={showEditModal} onHide={() => setShowEditModal(false)} centered>
           <Modal.Header closeButton>
             <Modal.Title>Edit Content</Modal.Title>
@@ -290,6 +332,16 @@ const ContentLibrary = ({ isAdmin = true }) => {
                   />
                 </div>
               )}
+
+              <Form.Group className="mb-3">
+                <Form.Label>YouTube Video URL</Form.Label>
+                <Form.Control
+                  type="url"
+                  placeholder="https://www.youtube.com/watch?v=..."
+                  value={videoUrl}
+                  onChange={(e) => setVideoUrl(e.target.value)}
+                />
+              </Form.Group>
             </Modal.Body>
             <Modal.Footer>
               <Button variant="secondary" onClick={() => setShowEditModal(false)}>
@@ -303,7 +355,7 @@ const ContentLibrary = ({ isAdmin = true }) => {
         </Modal>
       )}
 
-      {/* ✅ View Modal */}
+      {/* ----- VIEW MODAL ----- */}
       <Modal
         show={showViewModal}
         onHide={() => setShowViewModal(false)}
@@ -315,43 +367,37 @@ const ContentLibrary = ({ isAdmin = true }) => {
         </Modal.Header>
         <Modal.Body>
           {selectedContent && (
-            <>
-              <h4
-                className="mb-4 fw-bold"
-                style={{ color: "#006400", paddingBottom: "6px" }}
-              >
-                Overview
-              </h4>
-              <div
-                className="content-overview d-flex flex-column flex-md-row align-items-start gap-4"
-                style={{ alignItems: "stretch" }}
-              >
-                <div className="order-1 order-md-2 flex-fill text-center">
-                  <img
-                    src={getImageUrl(selectedContent.image)}
-                    alt={selectedContent.title}
-                    className="img-fluid rounded"
-                    style={{
-                      width: "100%",
-                      maxHeight: "400px",
-                      objectFit: "cover",
-                      borderRadius: "10px",
-                    }}
-                  />
-                </div>
-                <div className="order-2 order-md-1 flex-fill description-box">
-                  <div style={{ lineHeight: "1.6", textAlign: "justify" }}>
-                    {selectedContent.description
-                      ?.split(/\n+/)
-                      .map((para, index) => (
-                        <p key={index} style={{ marginBottom: "1em" }}>
-                          {para.trim()}
-                        </p>
-                      ))}
-                  </div>
+            <div className="row">
+              <div className="col-md-6">
+                <h5 className="mb-3 fw-bold" style={{ color: "#006400" }}>
+                  Overview
+                </h5>
+                <div style={{ lineHeight: "1.6", textAlign: "justify" }}>
+                  {selectedContent.description
+                    ?.split(/\n+/)
+                    .map((para, index) => (
+                      <p key={index} style={{ marginBottom: "1em" }}>
+                        {para.trim()}
+                      </p>
+                    ))}
                 </div>
               </div>
-            </>
+              <div className="col-md-6">
+                {selectedContent.video_url && (
+                  <div className="text-center">
+                    <iframe
+                      width="100%"
+                      height="315"
+                      src={selectedContent.video_url.replace("watch?v=", "embed/")}
+                      title="YouTube video player"
+                      frameBorder="0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    ></iframe>
+                  </div>
+                )}
+              </div>
+            </div>
           )}
         </Modal.Body>
         <Modal.Footer>
