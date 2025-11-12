@@ -47,45 +47,121 @@ const Charts = ({ data = {}, chartType }) => {
     );
   }
 
-  // INSTRUCTOR
-  if (chartType === "instructor") {
-    const donutData = [
-      { name: "Contents", value: data.total_contents || 0 },
-      { name: "Modules", value: data.total_modules || 0 },
-      { name: "Trainees", value: data.total_trainees || 0 },
-    ];
-    const stackedData = (data.contents || []).map(c => ({
-      content: c.content_title,
-      ...Object.fromEntries(c.modules.map(m => [m.module_title, m.trainee_count])),
-    }));
-    const moduleTitles = [...new Set(stackedData.flatMap(d => Object.keys(d)).filter(k => k !== "content"))];
+// INSTRUCTOR
+if (chartType === "instructor") {
+  const donutData = [
+    { name: "Contents", value: data.total_contents || 0 },
+    { name: "Modules", value: data.total_modules || 0 },
+    { name: "Trainees", value: data.total_trainees || 0 },
+  ];
 
-    return (
-      <div className="row">
-        <ChartContainer title="Summary (Donut)">
-          <ResponsiveContainer>
-            <PieChart>
-              <Pie data={donutData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={60} outerRadius={100} label>
-                {donutData.map((entry, idx) => <Cell key={idx} fill={COLORS[idx % COLORS.length]} />)}
-              </Pie><Tooltip /><Legend />
-            </PieChart>
-          </ResponsiveContainer>
-        </ChartContainer>
+  // Extract unique modules and contents
+  const modules = new Set();
+  const contents = new Set();
 
-        <ChartContainer title="Trainees per Content per Module (Clustered)">
-          <ResponsiveContainer>
-            <BarChart data={stackedData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="content" /><YAxis /><Tooltip /><Legend />
-              {moduleTitles.map((t, i) => <Bar key={t} dataKey={t} fill={COLORS[i % COLORS.length]} />)}
-            </BarChart>
-          </ResponsiveContainer>
-        </ChartContainer>
-      </div>
-    );
-  }
+  (data.contents || []).forEach((c) => {
+    contents.add(c.content_title);
+    c.modules.forEach((m) => modules.add(m.module_title));
+  });
 
-  // TRAINEE
+  // Transform data for stacked column chart
+  const stackedData = Array.from(modules).map((module) => {
+    const row = { module };
+    (data.contents || []).forEach((c) => {
+      const match = c.modules.find((m) => m.module_title === module);
+      row[c.content_title] = match ? match.trainee_count : 0;
+    });
+    return row;
+  });
+
+  const contentTitles = Array.from(contents);
+
+  // Custom Tooltip Component
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div
+          className="custom-tooltip bg-light p-2 rounded shadow-sm"
+          style={{
+            border: "1px solid #ccc",
+            minWidth: "180px",
+          }}
+        >
+          <p className="fw-bold mb-1 text-success">{`Module: ${label}`}</p>
+          {payload.map((entry, index) => (
+            <p
+              key={index}
+              className="mb-0"
+              style={{ color: entry.color }}
+            >{`${entry.name}: ${entry.value} trainee${entry.value === 1 ? "" : "s"}`}</p>
+          ))}
+        </div>
+      );
+    }
+    return null;
+  };
+
+  return (
+    <div className="row">
+      {/* === Donut Summary === */}
+      <ChartContainer title="Summary (Donut)">
+        <ResponsiveContainer>
+          <PieChart>
+            <Pie
+              data={donutData}
+              dataKey="value"
+              nameKey="name"
+              cx="50%"
+              cy="50%"
+              innerRadius={60}
+              outerRadius={100}
+              label
+            >
+              {donutData.map((entry, idx) => (
+                <Cell key={idx} fill={COLORS[idx % COLORS.length]} />
+              ))}
+            </Pie>
+            <Tooltip />
+            <Legend />
+          </PieChart>
+        </ResponsiveContainer>
+      </ChartContainer>
+
+      {/* === Taller Stacked Column Chart === */}
+      <ChartContainer title="Trainees per Module (Stacked by Content)">
+        <ResponsiveContainer width="100%" height={450}>
+          <BarChart
+            data={stackedData}
+            margin={{ top: 30, right: 30, left: 10, bottom: 50 }}
+          >
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis
+              dataKey="module"
+              angle={-15}
+              textAnchor="end"
+              interval={0}
+              height={60}
+            />
+            <YAxis />
+            <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(0,100,0,0.1)" }} />
+            <Legend />
+            {contentTitles.map((content, i) => (
+              <Bar
+                key={content}
+                dataKey={content}
+                stackId="a"
+                fill={COLORS[i % COLORS.length]}
+                radius={[4, 4, 0, 0]}
+              />
+            ))}
+          </BarChart>
+        </ResponsiveContainer>
+      </ChartContainer>
+    </div>
+  );
+}
+
+
   // TRAINEE
 if (chartType === "trainee") {
   const donutData = [
