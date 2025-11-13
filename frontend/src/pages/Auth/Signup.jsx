@@ -19,12 +19,6 @@ export default function Signup() {
   const [show, setShow] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // ✅ Generate trainee ID
-  const generateTraineeId = () => {
-    const randomNum = Math.floor(Math.random() * 9000) + 1000;
-    return `NLNG/T/${randomNum}`;
-  };
-
   // ✅ Capitalize helper
   const capitalize = (str) =>
     str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
@@ -39,8 +33,6 @@ export default function Signup() {
     }
 
     setLoading(true);
-    let traineeId = null;
-    if (role === "trainee") traineeId = generateTraineeId();
 
     try {
       const payload = {
@@ -49,15 +41,19 @@ export default function Signup() {
         role,
         first_name: capitalize(firstName.trim()),
         last_name: capitalize(lastName.trim()),
-        title,
-        trainee_id: traineeId,
+        title: role === "instructor" ? title : null,
       };
 
-      // ✅ Use API_BASE_URL
-      await axios.post(`${API_BASE_URL}/auth/signup`, payload);
+      const { data } = await axios.post(`${API_BASE_URL}/auth/signup`, payload);
 
-      toast.success("✅ Registration successful! You can now login.");
-      setTimeout(() => navigate("/login"), 1500);
+      // ✅ Toast message based on email success
+      if (data.emailSent) {
+        toast.success("✅ Registration successful! Check your email for login details.");
+      } else {
+        toast.warning("✅ Registration successful! But failed to send email.");
+      }
+
+      setTimeout(() => navigate("/login"), 2000);
     } catch (err) {
       toast.error(err.response?.data?.error || "❌ Registration failed.");
     } finally {
